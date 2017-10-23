@@ -15,14 +15,12 @@
 package iotdet
 
 import (
-    jww "github.com/spf13/jwalterweatherman"
-    "os/exec"
     "time"
     "fmt"
 )
 
 type stopChanel chan struct{}
-type statusChannel chan string
+type connChanel chan struct{}
 
 // runUntil runs given function until it returns true or atMost times tries.
 func runUntil(what func() bool, interval time.Duration, atMost int) chan bool {
@@ -49,28 +47,7 @@ func runUntil(what func() bool, interval time.Duration, atMost int) chan bool {
     return stop
 }
 
-// runCmdBg run shell command in background with ability to stop it with closing StopChannel.
-func runCmdBg(cmd *exec.Cmd) (stopChanel, error) {
-    if err := cmd.Start(); err != nil {
-        return nil, err
-    }
-
-    stop := make(chan struct{})
-
-    go func() {
-        select {
-        case <-stop:
-            jww.DEBUG.Printf("Killing PID %d.", cmd.Process.Pid)
-            cmd.Process.Kill()
-            stop <- struct{}{}
-            return
-        }
-    }()
-
-    return stop, nil
-}
-
-func dumpBytes (buf []byte) {
+func dumpBytes(buf []byte) {
     for i, x := range buf {
         fmt.Printf("%02x ", x)
         if (i+1)%8 == 0 {

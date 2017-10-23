@@ -26,6 +26,8 @@ import (
     "regexp"
     "strings"
     "strconv"
+    "bufio"
+    "time"
 )
 
 // addressRegEx is regular expression for WiFi access point unique address.
@@ -110,6 +112,7 @@ func isUp(itf net.Interface) bool {
 func connectToAp(apName string, apPass string, itfName string) (stopChanel, error) {
     var err error
     var wpaStopCh stopChanel
+    var wpaConnCh connChanel
 
     stopCh := make(stopChanel)
 
@@ -121,7 +124,7 @@ func connectToAp(apName string, apPass string, itfName string) (stopChanel, erro
         return nil, err
     }
 
-    if wpaStopCh, err = startWpaDaemon(itfName); err != nil {
+    if wpaConnCh, wpaStopCh, err = startWpaDaemon(itfName); err != nil {
         return nil, err
     }
 
@@ -134,6 +137,15 @@ func connectToAp(apName string, apPass string, itfName string) (stopChanel, erro
             close(wpaStopCh)
         }
     }()
+
+    jww.DEBUG.Printf("Waiting for WiFi connection.")
+    select {
+    case <-wpaConnCh:
+        break
+    case <-time.After(10 * time.Second):
+        stopCh <- struct{}{}
+        return nil, errors.New("WiFi connection timeout.")
+    }
 
     return stopCh, nil
 }
@@ -211,7 +223,7 @@ func getWpaConfigPath() string {
 }
 
 // startWpaDaemon starts wpa_supplicant daemon.
-func startWpaDaemon(itfName string) (stopChanel, error) {
+func startWpaDaemon(itfName string) (connChanel, stopChanel, error) {
     jww.DEBUG.Println("Starting wpa_supplicant daemon.")
 
     // wpa_supplicant -i wlan0 -D nl80211 -c /tmp/iot_wpa_supplicant.123.conf
@@ -220,10 +232,43 @@ func startWpaDaemon(itfName string) (stopChanel, error) {
     config := "-c" + getWpaConfigPath()
 
     cmd := exec.Command("wpa_supplicant", itf, driver, config)
-    stopChan, err := runCmdBg(cmd)
+
+    stopCh := make(stopChanel)
+    connCh := make(connChanel)
+    stdoutCh := make(chan string)
+
+    stdout, err := cmd.StdoutPipe()
     if err != nil {
-        return nil, errors.Wrap(err, "wpa_supplicant")
+        return nil, nil, err
     }
 
-    return stopChan, nil
+    if err := cmd.Start(); err != nil {
+        return nil, nil, err
+    }
+
+    go func() {
+        scanner := bufio.NewScanner(stdout)
+        for scanner.Scan() {
+            stdoutCh <- scanner.Text()
+        }
+    }()
+
+    go func() {
+        for {
+            select {
+            case t := <-stdoutCh:
+                jww.DEBUG.Printf("WPA: %s\n", t)
+                if strings.Contains(t, "CTRL-EVENT-CONNECTED") {
+                    connCh <- struct{}{}
+                }
+            case <-stopCh:
+                jww.DEBUG.Printf("Killing PID %d.", cmd.Process.Pid)
+                cmd.Process.Kill()
+                stopCh <- struct{}{}
+                return
+            }
+        }
+    }()
+
+    return connCh, stopCh, nil
 }

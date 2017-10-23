@@ -57,8 +57,12 @@ func (ap *AccessPoint) connect(pass string) error {
 }
 
 func (ap *AccessPoint) disconnect() {
-    jww.DEBUG.Printf("Disconnecting from %s access point.\n", ap.Name)
-    ap.disconnectCh <- struct{}{}
+    select {
+    case ap.disconnectCh <- struct{}{}:
+        jww.DEBUG.Printf("Disconnecting from %s access point.\n", ap.Name)
+    default:
+        return
+    }
     <-ap.disconnectCh
 }
 
