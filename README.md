@@ -16,9 +16,8 @@ You may use [gen_aes.sh](gen_aes.sh) helper script to generate keys using `opens
 
 ## TODO
 
-- Remove configuration file written by wpa_supplicant to temp directory.
-- Check wpa_supplicant command log and proceed only when message 
-like "CTRL-EVENT-CONNECTED - Connection to 5e:cf:7f:80:ce:79 completed" is seen.
+- [x] Remove configuration file written by wpa_supplicant to temp directory.
+- [x] Check wpa_supplicant command log and proceed only when message like "CTRL-EVENT-CONNECTED - Connection to 5e:cf:7f:80:ce:79 completed" is seen.
 
 ## License
 

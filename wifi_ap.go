@@ -25,10 +25,10 @@ import (
 var iotWiFiRegEx *regexp.Regexp = regexp.MustCompile("IOT_([[:xdigit:]]{2}){3}")
 
 type AccessPoint struct {
-    Name         string   // Access point name.
-    Bssid        string   // Access point BSSID.
-    itf          *wifiItf // The wifi interface we use to connect to this access point.
-    disconnectCh stopChanel
+    Name   string   // Access point name.
+    Bssid  string   // Access point BSSID.
+    itf    *wifiItf // The wifi interface we use to connect to this access point.
+    stopCh stopChanel
 }
 
 func NewAccessPoint(name, mac string, itf *wifiItf) *AccessPoint {
@@ -48,22 +48,22 @@ func (ap *AccessPoint) connect(pass string) error {
     var err error
 
     jww.DEBUG.Printf("Connecting to %s with password: %s\n", ap.Name, pass)
-    ap.disconnectCh, err = connectToAp(ap.Name, pass, ap.itf.Name)
+    ap.stopCh, err = connectToAp(ap.Name, pass, ap.itf.Name)
     if err != nil {
         return err
     }
 
-    return err
+    return nil
 }
 
 func (ap *AccessPoint) disconnect() {
     select {
-    case ap.disconnectCh <- struct{}{}:
+    case ap.stopCh <- struct{}{}:
         jww.DEBUG.Printf("Disconnecting from %s access point.\n", ap.Name)
+        <-ap.stopCh
     default:
         return
     }
-    <-ap.disconnectCh
 }
 
 // getIp returns IP address given to WiFi interface.

@@ -133,17 +133,19 @@ func connectToAp(apName string, apPass string, itfName string) (stopChanel, erro
         case <-stopCh:
             wpaStopCh <- struct{}{}
             <-wpaStopCh
-            close(stopCh)
             close(wpaStopCh)
+            close(stopCh)
         }
     }()
 
     jww.DEBUG.Printf("Waiting for WiFi connection.")
     select {
     case <-wpaConnCh:
+        jww.INFO.Println("WiFi connected.")
         break
     case <-time.After(10 * time.Second):
         stopCh <- struct{}{}
+        <-stopCh
         return nil, errors.New("WiFi connection timeout.")
     }
 
@@ -264,6 +266,9 @@ func startWpaDaemon(itfName string) (connChanel, stopChanel, error) {
             case <-stopCh:
                 jww.DEBUG.Printf("Killing PID %d.", cmd.Process.Pid)
                 cmd.Process.Kill()
+                path := getWpaConfigPath();
+                jww.DEBUG.Printf("Removing wpa_supplicant daemon config file %s", path)
+                os.Remove(path)
                 stopCh <- struct{}{}
                 return
             }
