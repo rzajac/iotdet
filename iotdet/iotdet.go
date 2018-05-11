@@ -15,13 +15,13 @@
 package main
 
 import (
-    "github.com/rzajac/iotdet"
     "github.com/codegangsta/cli"
     "github.com/pkg/errors"
     jww "github.com/spf13/jwalterweatherman"
     "os"
     "github.com/go-ini/ini"
     "encoding/hex"
+    "github.com/rzajac/iotdet/pkg/iotdet"
 )
 
 func main() {

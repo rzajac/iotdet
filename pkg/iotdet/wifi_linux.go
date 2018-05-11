@@ -85,8 +85,6 @@ func ifUp(itf net.Interface) error {
     if err != nil {
         if _, ok := err.(*exec.ExitError); ok {
             return err
-        } else {
-            return nil
         }
     }
 
@@ -100,8 +98,6 @@ func isUp(itf net.Interface) bool {
         if _, ok := err.(*exec.ExitError); ok {
             // The program has exited with an exit code != 0
             return false
-        } else {
-            return true
         }
     }
 
@@ -159,8 +155,6 @@ func setIp(itfName string, ip string) error {
     if err != nil {
         if _, ok := err.(*exec.ExitError); ok {
             return err
-        } else {
-            return nil
         }
     }
 
@@ -174,8 +168,6 @@ func pingIot(itfName string, ip string) error {
     if err != nil {
         if _, ok := err.(*exec.ExitError); ok {
             return errors.Errorf("Can't reach %s with ping.", ip)
-        } else {
-            return nil
         }
     }
 
@@ -266,7 +258,7 @@ func startWpaDaemon(itfName string) (connChanel, stopChanel, error) {
             case <-stopCh:
                 jww.DEBUG.Printf("Killing PID %d.", cmd.Process.Pid)
                 cmd.Process.Kill()
-                path := getWpaConfigPath();
+                path := getWpaConfigPath()
                 jww.DEBUG.Printf("Removing wpa_supplicant daemon config file %s", path)
                 os.Remove(path)
                 stopCh <- struct{}{}
