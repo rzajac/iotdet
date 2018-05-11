@@ -1,3 +1,6 @@
 # User-specific stuff:
 .idea
-iotdet/iotdet
+tmp/
+!tmp/\.dummy
+dist/
+!dist/\.dummy

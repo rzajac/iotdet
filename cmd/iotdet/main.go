@@ -1,6 +1,6 @@
 package main
 
-import "github.com/rzajac/iotdet/cmd/iodet/cmd"
+import "github.com/rzajac/iotdet/cmd/iotdet/cmd"
 
 func main() {
     cmd.Execute()
