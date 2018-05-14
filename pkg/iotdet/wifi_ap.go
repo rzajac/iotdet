@@ -24,15 +24,19 @@ import (
 // iotWiFiRegEx is regular expression matching IoT access point names.
 var iotWiFiRegEx *regexp.Regexp = regexp.MustCompile("IOT_([[:xdigit:]]{2}){3}")
 
-type AccessPoint struct {
+// DevAP represents IoT device access point.
+// IoT devices create access points when they are waiting to be discovered
+// and configured.
+type DevAP struct {
     Name   string   // Access point name.
     Bssid  string   // Access point BSSID.
     itf    *wifiItf // The wifi interface we use to connect to this access point.
     stopCh stopChanel
 }
 
-func NewAccessPoint(name, mac string, itf *wifiItf) *AccessPoint {
-    return &AccessPoint{
+// NewDevAP returns new DevAP instance.
+func NewDevAP(name, mac string, itf *wifiItf) *DevAP {
+    return &DevAP{
         Name:  name,
         Bssid: mac,
         itf:   itf,
@@ -40,11 +44,15 @@ func NewAccessPoint(name, mac string, itf *wifiItf) *AccessPoint {
 }
 
 // IsIotAp checks if access point name matches IoT device.
-func (ap *AccessPoint) IsIotAp() bool {
+func (ap *DevAP) IsIotAp() bool {
     return iotWiFiRegEx.MatchString(ap.Name)
 }
 
-func (ap *AccessPoint) connect(pass string) error {
+func (ap *DevAP) Configure(params) error {
+
+}
+
+func (ap *DevAP) connect(pass string) error {
     var err error
 
     jww.DEBUG.Printf("Connecting to %s with password: %s\n", ap.Name, pass)
@@ -56,7 +64,7 @@ func (ap *AccessPoint) connect(pass string) error {
     return nil
 }
 
-func (ap *AccessPoint) disconnect() {
+func (ap *DevAP) disconnect() {
     select {
     case ap.stopCh <- struct{}{}:
         jww.DEBUG.Printf("Disconnecting from %s access point.\n", ap.Name)
@@ -70,7 +78,7 @@ func (ap *AccessPoint) disconnect() {
 //
 // Note: If interface has more then one IP addresses assigned to it this method will
 // return the firs one in the collection.
-func (ap *AccessPoint) getIp() (string, error) {
+func (ap *DevAP) getIp() (string, error) {
     var err error
     var ip net.IP
     var addrs []net.Addr

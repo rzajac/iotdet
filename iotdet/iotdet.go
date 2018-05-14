@@ -62,7 +62,7 @@ func main() {
 // iotDetect detects and configures new IoT devices.
 func iotDetect(ctx *cli.Context) {
     var err error
-    var aps []*iotdet.AccessPoint
+    var aps []*iotdet.DevAP
     var cfg *iotdet.IotCfg
 
     jww.SetStdoutThreshold(jww.Threshold(ctx.GlobalInt("log level")))

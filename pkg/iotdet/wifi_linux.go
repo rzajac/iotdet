@@ -31,10 +31,10 @@ import (
 )
 
 // addressRegEx is regular expression for WiFi access point unique address.
-var addressRegEx *regexp.Regexp = regexp.MustCompile("(:?.*?)Address: (([[:xdigit:]]{2}:){5}[[:xdigit:]]{2})")
+var addressRegEx = regexp.MustCompile("(:?.*?)Address: (([[:xdigit:]]{2}:){5}[[:xdigit:]]{2})")
 
 // nameRegEx is regular expression for WiFi access point name.
-var nameRegEx *regexp.Regexp = regexp.MustCompile("(:?.*?)ESSID:\"(.*?)\"")
+var nameRegEx = regexp.MustCompile("(:?.*?)ESSID:\"(.*?)\"")
 
 func getWifiInterfaces() ([]net.Interface, error) {
     var err error
@@ -55,8 +55,8 @@ func getWifiInterfaces() ([]net.Interface, error) {
     return ret, nil
 }
 
-func scanForAPs(itf *wifiItf) ([]*AccessPoint, error) {
-    var aps []*AccessPoint
+func scanForAPs(itf *wifiItf) ([]*DevAP, error) {
+    var aps []*DevAP
 
     out, err := exec.Command("bash", "-c", "iwlist "+itf.Name+" scan | egrep 'ESSID:|Address:'").CombinedOutput()
     if err != nil {
@@ -73,7 +73,7 @@ func scanForAPs(itf *wifiItf) ([]*AccessPoint, error) {
 
         mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
         name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
-        aps = append(aps, NewAccessPoint(name, mac, itf))
+        aps = append(aps, NewDevAP(name, mac, itf))
     }
 
     return aps, nil
@@ -161,7 +161,7 @@ func setIp(itfName string, ip string) error {
     return nil
 }
 
-func pingIot(itfName string, ip string) error {
+func ping(itfName string, ip string) error {
     jww.DEBUG.Printf("Pinging IoT device at %s.", ip)
 
     err := exec.Command("ping", "-I", itfName, "-c1", "-W", "1", ip).Run()

@@ -16,83 +16,136 @@ package iotdet
 
 import (
     "github.com/pkg/errors"
-    jww "github.com/spf13/jwalterweatherman"
     "net"
     "time"
+    "sync"
+    "github.com/sirupsen/logrus"
 )
 
-func findWifiInterface(itfName string) (*wifiItf, error) {
+// interfaces is a collection of system WiFi interfaces.
+var interfaces map[string]*wifiItf
+
+func init() {
+    interfaces = make(map[string]*wifiItf, 2)
+}
+
+// GetInterface returns WiFi interface or error if it does not exist.
+func GetInterface(name string, log *logrus.Entry) (*wifiItf, error) {
+    if itf, ok := interfaces[name]; ok {
+        return itf, nil
+    }
+
     var err error
     var itfs []net.Interface
-
     if itfs, err = getWifiInterfaces(); err != nil {
         return nil, err
     }
 
     // Check if given interface name exists on the system.
     for _, itf := range itfs {
-        if itf.Name == itfName {
-            return &wifiItf{itf}, nil
+        if itf.Name == name {
+            interfaces[name] = &wifiItf{
+                Interface: itf,
+                Mutex:     &sync.Mutex{},
+                log:       log,
+            }
+            return interfaces[name], nil
         }
     }
 
-    return nil, errors.Errorf("wifi interface %s not found", itfName)
+    return nil, errors.Errorf("wifi interface %s not found", name)
 }
 
+// wifiItf represents WiFi interface.
 type wifiItf struct {
     net.Interface
+    *sync.Mutex
+    log    *logrus.Entry
+    discCh stopChanel
+}
+
+// SetIP sets IP on the interface.
+func (w *wifiItf) SetIP(ip string) error {
+    return setIp(w.Name, ip)
+}
+
+// Ping pings IP address and returns error if IP cannot be pinged.
+func (w *wifiItf) Ping(ip string) error {
+    return ping(w.Name, ip)
+}
+
+// Connect connects to access point.
+func (w *wifiItf) Connect(apName, apPass string) error {
+    var err error
+    w.discCh, err = connectToAp(apName, apPass, w.Name)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+// Disconnect disconnects from access point.
+func (w *wifiItf) Disconnect() {
+    select {
+    case w.discCh <- struct{}{}:
+        w.log.Debugf("disconnecting %s", w.Name)
+        <-w.discCh
+    default:
+        return
+    }
 }
 
 // makeSureIsUp makes sure interface is up.
-func (wi *wifiItf) makeSureIsUp() error {
-    if isUp(wi.Interface) {
+func (w *wifiItf) makeSureIsUp() error {
+    if isUp(w.Interface) {
         return nil
     }
 
-    jww.DEBUG.Printf("Waiting for %s wifi interface to became available.", wi.Name)
-    if err := ifUp(wi.Interface); err != nil {
+    w.log.Debugf("waiting for %s wifi interface to became available", w.Name)
+    if err := ifUp(w.Interface); err != nil {
         return err
     }
 
     stopCh := runUntil(func() bool {
-        return isUp(wi.Interface)
+        return isUp(w.Interface)
     }, 1*time.Second, 5)
 
     success := <-stopCh
     if !success {
-        return errors.Errorf("interface %s could not be brought up", wi.Name)
+        return errors.Errorf("interface %s could not be brought up", w.Name)
     }
 
-    jww.DEBUG.Printf("wifiItf %s is up.\n", wi.Name)
+    w.log.Debugf("wifiItf %s is up.\n", w.Name)
 
     return nil
 }
 
 // scanForAPs returns a list of WiFi access points in range.
-func (wi *wifiItf) scanForAPs() ([]*AccessPoint, error) {
-    var aps []*AccessPoint
-    if err := wi.makeSureIsUp(); err != nil {
+func (w *wifiItf) scanForAPs() ([]*DevAP, error) {
+    var aps []*DevAP
+    if err := w.makeSureIsUp(); err != nil {
         return aps, err
     }
 
-    return scanForAPs(wi)
+    return scanForAPs(w)
 }
 
 // scanForIotAPs returns a list of IoT access points in range.
-func (wi *wifiItf) scanForIotAPs() ([]*AccessPoint, error) {
-    var aps []*AccessPoint
-    if err := wi.makeSureIsUp(); err != nil {
+func (w *wifiItf) scanForIotAPs() ([]*DevAP, error) {
+    var aps []*DevAP
+    if err := w.makeSureIsUp(); err != nil {
         return aps, err
     }
 
-    aps, err := scanForAPs(wi)
+    aps, err := scanForAPs(w)
     if err != nil {
         return nil, err
     }
 
-    var iotAps []*AccessPoint
+    var iotAps []*DevAP
     for _, ap := range aps {
-        jww.INFO.Printf("Found AP %s (%s).\n", ap.Name, ap.Bssid)
+        w.log.Infof("found AP %s (%s)", ap.Name, ap.Bssid)
         if ap.IsIotAp() {
             iotAps = append(iotAps, ap)
         }

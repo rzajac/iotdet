@@ -18,21 +18,8 @@ import (
     jww "github.com/spf13/jwalterweatherman"
 )
 
-// Detect detects IoT access points in range.
-func Detect(cfg *IotCfg) ([]*AccessPoint, error) {
-    var err error
-    var itf *wifiItf
-
-    if itf, err = findWifiInterface(cfg.ItfName); err != nil {
-        return nil, err
-    }
-
-    jww.INFO.Println("Scanning for new IoT devices...")
-    return itf.scanForIotAPs()
-}
-
 // Configure configures IoT devices.
-func Configure(cfg *IotCfg, aps []*AccessPoint) error {
+func Configure(cfg *IotCfg, aps []*DevAP) error {
     var err error
 
     var iotDev *iotDev
@@ -48,7 +35,7 @@ func Configure(cfg *IotCfg, aps []*AccessPoint) error {
             return err
         }
 
-        if err = pingIot(cfg.ItfName, cfg.IotIp); err != nil {
+        if err = ping(cfg.ItfName, cfg.IotIp); err != nil {
             ap.disconnect()
             return err
         }
