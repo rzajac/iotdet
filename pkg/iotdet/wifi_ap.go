@@ -15,9 +15,6 @@
 package iotdet
 
 import (
-    "github.com/pkg/errors"
-    jww "github.com/spf13/jwalterweatherman"
-    "net"
     "regexp"
 )
 
@@ -28,18 +25,17 @@ var iotWiFiRegEx *regexp.Regexp = regexp.MustCompile("IOT_([[:xdigit:]]{2}){3}")
 // IoT devices create access points when they are waiting to be discovered
 // and configured.
 type DevAP struct {
-    Name   string   // Access point name.
-    Bssid  string   // Access point BSSID.
-    itf    *wifiItf // The wifi interface we use to connect to this access point.
-    stopCh stopChanel
+    Name  string   // Access point name.
+    Bssid string   // Access point BSSID.
+    Itf   *WiFiItf // The wifi interface we use to connect to this access point.
 }
 
 // NewDevAP returns new DevAP instance.
-func NewDevAP(name, mac string, itf *wifiItf) *DevAP {
+func NewDevAP(name, mac string, itf *WiFiItf) *DevAP {
     return &DevAP{
         Name:  name,
         Bssid: mac,
-        itf:   itf,
+        Itf:   itf,
     }
 }
 
@@ -48,57 +44,10 @@ func (ap *DevAP) IsIotAp() bool {
     return iotWiFiRegEx.MatchString(ap.Name)
 }
 
-func (ap *DevAP) Configure(params) error {
-
+func (ap *DevAP) Connect(pass string) error {
+    return ap.Itf.Connect(ap.Name, pass)
 }
 
-func (ap *DevAP) connect(pass string) error {
-    var err error
-
-    jww.DEBUG.Printf("Connecting to %s with password: %s\n", ap.Name, pass)
-    ap.stopCh, err = connectToAp(ap.Name, pass, ap.itf.Name)
-    if err != nil {
-        return err
-    }
-
-    return nil
-}
-
-func (ap *DevAP) disconnect() {
-    select {
-    case ap.stopCh <- struct{}{}:
-        jww.DEBUG.Printf("Disconnecting from %s access point.\n", ap.Name)
-        <-ap.stopCh
-    default:
-        return
-    }
-}
-
-// getIp returns IP address given to WiFi interface.
-//
-// Note: If interface has more then one IP addresses assigned to it this method will
-// return the firs one in the collection.
-func (ap *DevAP) getIp() (string, error) {
-    var err error
-    var ip net.IP
-    var addrs []net.Addr
-
-    if addrs, err = ap.itf.Interface.Addrs(); err != nil {
-        return "", errors.Wrapf(err, "Can not get IP address for %s.", ap.itf.Name)
-    }
-
-    for _, addr := range addrs {
-        switch v := addr.(type) {
-        case *net.IPNet:
-            ip = v.IP
-        case *net.IPAddr:
-            ip = v.IP
-        }
-
-        if ip.To4() != nil {
-            return ip.String(), nil
-        }
-    }
-
-    return "", errors.Errorf("The %s has no IPv4 IP addresses.", ap.itf.Name)
+func (ap *DevAP) Disconnect() {
+    ap.Itf.Disconnect()
 }

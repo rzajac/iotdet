@@ -21,7 +21,7 @@ import (
 // Detector is responsible for detecting new IoT
 // devices using specified WiFi interface.
 type Detector struct {
-    itf *wifiItf
+    itf *WiFiItf
     log *logrus.Entry
 }
 

@@ -105,7 +105,7 @@ func (udp *UdpServer) handleDiscovery(dev *iotDev) ([]byte, error) {
     }
 
     if len(ips) == 0 {
-        msg := fmt.Sprintf("wifiItf %f has no IP addresses.\n", udp.itf.Name)
+        msg := fmt.Sprintf("WiFiItf %f has no IP addresses.\n", udp.itf.Name)
         return nil, errors.New(msg)
     }
 

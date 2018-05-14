@@ -17,6 +17,7 @@ package iotdet
 import (
     "time"
     "fmt"
+    "os"
 )
 
 type stopChanel chan struct{}
@@ -58,4 +59,14 @@ func dumpBytes(buf []byte) {
         }
     }
     fmt.Print("\n\n")
+}
+
+// Checks if directory exists.
+func dirExists(dirPath string) bool {
+    if _, err := os.Stat(dirPath); err != nil {
+        if os.IsNotExist(err) {
+            return false
+        }
+    }
+    return true
 }

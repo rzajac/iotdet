@@ -24,19 +24,19 @@ func Configure(cfg *IotCfg, aps []*DevAP) error {
 
     var iotDev *iotDev
     for _, ap := range aps {
-        if err = ap.connect(cfg.DevApPass); err != nil {
+        if err = ap.Connect(cfg.DevApPass); err != nil {
             jww.ERROR.Println(err)
-            ap.disconnect()
+            ap.Disconnect()
             continue
         }
 
         if err = setIp(cfg.ItfName, cfg.MyIp); err != nil {
-            ap.disconnect()
+            ap.Disconnect()
             return err
         }
 
         if err = ping(cfg.ItfName, cfg.IotIp); err != nil {
-            ap.disconnect()
+            ap.Disconnect()
             return err
         }
 
@@ -45,7 +45,7 @@ func Configure(cfg *IotCfg, aps []*DevAP) error {
             jww.ERROR.Println(err)
         }
 
-        ap.disconnect()
+        ap.Disconnect()
     }
 
     return nil
