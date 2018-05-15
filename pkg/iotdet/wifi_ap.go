@@ -45,9 +45,9 @@ func (ap *DevAP) IsIotAp() bool {
 }
 
 func (ap *DevAP) Connect(pass string) error {
-    return ap.Itf.Connect(ap.Name, pass)
+    return ap.Itf.connect(ap.Name, pass)
 }
 
 func (ap *DevAP) Disconnect() {
-    ap.Itf.Disconnect()
+    ap.Itf.disconnect()
 }

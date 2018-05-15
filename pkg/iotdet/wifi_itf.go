@@ -82,37 +82,46 @@ type WiFiItf struct {
     discCh stopChanel
 }
 
-// Ip returns IP address for the interface.
-//
-// If the interface has more then one IP addresses assigned to it the first one
-// will be returned.
-func (w *WiFiItf) Ip() (string, error) {
+// Configure configures IoT devices.
+func (w *WiFiItf) Configure(myIP, iotIP string, iotPort int, name, pass string, cipher *Cipher) error {
     var err error
-    var addrs []net.Addr
+    var aps []*DevAP
 
-    if addrs, err = w.itf.Addrs(); err != nil {
-        return "", errors.Wrapf(err, "can not get IP address for %s", w.itf.Name)
+    if aps, err = w.scan(); err != nil {
+        return err
     }
 
-    var ip net.IP
-    for _, addr := range addrs {
-        switch v := addr.(type) {
-        case *net.IPNet:
-            ip = v.IP
-        case *net.IPAddr:
-            ip = v.IP
+    var iotDev *iotDev
+    for _, ap := range aps {
+        if err = ap.Connect(pass); err != nil {
+            w.log.Error(err)
+            ap.Disconnect()
+            continue
         }
 
-        if ip.To4() != nil {
-            return ip.String(), nil
+        if err = ap.Itf.setIP(myIP); err != nil {
+            ap.Disconnect()
+            return err
         }
+
+        if err = ap.Itf.ping(iotIP); err != nil {
+            ap.Disconnect()
+            return err
+        }
+
+        iotDev = newIotDev(iotIP, cipher)
+        if _, err = iotDev.sendCmd(iotPort, newApCmd(name, pass)); err != nil {
+            w.log.Error(err)
+        }
+
+        ap.Disconnect()
     }
 
-    return "", errors.Errorf("the %s has no IPv4 IP address", w.itf.Name)
+    return nil
 }
 
-// SetIP sets IP on the interface.
-func (w *WiFiItf) SetIP(ip string) error {
+// setIP sets IP on the interface.
+func (w *WiFiItf) setIP(ip string) error {
     w.log.Debugf("setting %s IP to %s", w.itf.Name, ip)
     err := exec.Command("ifconfig", w.itf.Name, ip, "netmask", "255.255.255.0").Run()
     if err != nil {
@@ -124,8 +133,8 @@ func (w *WiFiItf) SetIP(ip string) error {
     return nil
 }
 
-// Ping pings IP address and returns error if IP cannot be pinged.
-func (w *WiFiItf) Ping(ip string) error {
+// ping pings IP address and returns error if IP cannot be pinged.
+func (w *WiFiItf) ping(ip string) error {
     w.log.Debugf("pinging device at %s", ip)
     err := exec.Command("ping", "-I", w.itf.Name, "-c1", "-W", "1", ip).Run()
     if err != nil {
@@ -137,8 +146,8 @@ func (w *WiFiItf) Ping(ip string) error {
     return nil
 }
 
-// Connect connects to access point.
-func (w *WiFiItf) Connect(apName, apPass string) error {
+// connect connects to access point.
+func (w *WiFiItf) connect(apName, apPass string) error {
     w.log.Debugf("killing wpa_supplicant for %s interface.", w.itf.Name)
     exec.Command("bash", "-c", "wpa_cli -i "+w.itf.Name+" terminate").Run()
     if err := w.wpaConfigWrite(apName, apPass); err != nil {
@@ -176,8 +185,8 @@ func (w *WiFiItf) Connect(apName, apPass string) error {
     return nil
 }
 
-// Disconnect disconnects from access point.
-func (w *WiFiItf) Disconnect() {
+// disconnect disconnects from access point.
+func (w *WiFiItf) disconnect() {
     select {
     case w.discCh <- struct{}{}:
         w.log.Debugf("disconnecting %s", w.itf.Name)
@@ -237,8 +246,8 @@ func (w *WiFiItf) makeSureIsUp() error {
     return nil
 }
 
-// Scan returns a list of IoT WiFi access points in range.
-func (w *WiFiItf) Scan() ([]*DevAP, error) {
+// scan returns a list of IoT WiFi access points in range.
+func (w *WiFiItf) scan() ([]*DevAP, error) {
     var aps []*DevAP
 
     if err := w.makeSureIsUp(); err != nil {

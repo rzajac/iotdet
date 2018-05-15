@@ -16,9 +16,10 @@ package iotdet
 
 import (
     "github.com/sirupsen/logrus"
+    "time"
 )
 
-// Detector is responsible for detecting new IoT
+// Detector is responsible for detecting and configuring new IoT
 // devices using specified WiFi interface.
 type Detector struct {
     itf *WiFiItf
@@ -35,8 +36,28 @@ func NewDetector(itfName string, log *logrus.Entry) (*Detector, error) {
     return &Detector{itf: itf, log: log}, nil
 }
 
+func (d *Detector) Start(period time.Duration) (CtrlChanel, error) {
+    ctrl := make(CtrlChanel)
+
+    go func() {
+        for {
+            <-time.After(period * time.Second)
+            select {
+            case cmd := <-ctrl:
+                if cmd == "STOP" {
+                    return
+                }
+
+            default:
+            }
+        }
+    }()
+
+    return ctrl, nil
+}
+
 // Detect detects IoT access points in range.
 func (d *Detector) Detect() ([]*DevAP, error) {
     d.log.Infof("Scanning for new IoT devices using %s interface...", d.itf.itf.Name)
-    return d.itf.Scan()
+    return d.itf.scan()
 }

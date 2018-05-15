@@ -5,6 +5,7 @@ import (
     "github.com/spf13/viper"
     "github.com/rzajac/iotdet/pkg/iotdet"
     "os"
+    "time"
 )
 
 var startCmd = &cobra.Command{
@@ -13,6 +14,27 @@ var startCmd = &cobra.Command{
     Long:  `Start IoT detection and configuration service.`,
     Run: func(cmd *cobra.Command, args []string) {
         itfName := viper.GetString("iotdet.itf_name")
+
+        ctrl := make(iotdet.CtrlChanel)
+
+        go func() {
+            for {
+                <-time.After(1 * time.Second)
+                select {
+                case cmd := <-ctrl:
+                    if cmd == "STOP" {
+                        log.Info("STOPPING")
+                        return
+                    }
+
+                default:
+                    log.Info("DEFAULT")
+                }
+            }
+        }()
+
+        <-time.After(10 * time.Second)
+        ctrl <- "STOP"
 
         detector, err := iotdet.NewDetector(itfName, log)
         if err != nil {

@@ -23,6 +23,10 @@ import (
 type stopChanel chan struct{}
 type connChanel chan struct{}
 
+type CtrlChanel chan string
+
+const CTRL_STOP = "STOP"
+
 // runUntil runs given function until it returns true or atMost times tries.
 func runUntil(what func() bool, interval time.Duration, atMost int) chan bool {
     var try int = 0
