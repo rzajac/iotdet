@@ -30,12 +30,12 @@ func Configure(cfg *IotCfg, aps []*DevAP) error {
             continue
         }
 
-        if err = setIp(cfg.ItfName, cfg.MyIp); err != nil {
+        if err = ap.Itf.SetIP(cfg.MyIp); err != nil {
             ap.Disconnect()
             return err
         }
 
-        if err = ping(cfg.ItfName, cfg.IotIp); err != nil {
+        if err = ap.Itf.Ping(cfg.IotIp); err != nil {
             ap.Disconnect()
             return err
         }

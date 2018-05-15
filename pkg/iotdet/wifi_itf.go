@@ -84,8 +84,8 @@ type WiFiItf struct {
 
 // Ip returns IP address for the interface.
 //
-// Note: If the interface has more then one IP addresses assigned to it
-// this method will return the first one.
+// If the interface has more then one IP addresses assigned to it the first one
+// will be returned.
 func (w *WiFiItf) Ip() (string, error) {
     var err error
     var addrs []net.Addr

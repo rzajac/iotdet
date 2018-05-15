@@ -15,11 +15,10 @@
 package iotdet
 
 import (
-    "fmt"
     "github.com/pkg/errors"
-    jww "github.com/spf13/jwalterweatherman"
     "net"
     "strconv"
+    "github.com/sirupsen/logrus"
 )
 
 // UdpServer represents UDP server listening for
@@ -27,13 +26,15 @@ import (
 type UdpServer struct {
     cfg  *IotCfg
     itf  *net.Interface
-    Stop chan bool
+    stop chan bool
+    log  *logrus.Entry
 }
 
-func NewUdpServer(cfg *IotCfg, itf *net.Interface) *UdpServer {
+func NewUdpServer(cfg *IotCfg, itf *net.Interface, log *logrus.Entry) *UdpServer {
     return &UdpServer{
         cfg: cfg,
         itf: itf,
+        log: log,
     }
 }
 
@@ -43,14 +44,14 @@ func (udp *UdpServer) Start(stop chan bool) error {
     var srvAddr *net.UDPAddr
     var srvConn *net.UDPConn
 
-    if udp.Stop != nil {
-        return errors.New("UDP server already started.")
+    if udp.stop != nil {
+        return errors.New("UDP server already started")
     }
 
-    udp.Stop = stop
+    udp.stop = stop
 
     // Setup UDP address.
-    jww.FEEDBACK.Println("Starting UDP server " + ":" + strconv.Itoa(udp.cfg.UdpPort))
+    udp.log.Infof("starting UDP server on port %d", strconv.Itoa(udp.cfg.UdpPort))
     if srvAddr, err = net.ResolveUDPAddr("udp", ":"+strconv.Itoa(udp.cfg.UdpPort)); err != nil {
         return err
     }
@@ -67,25 +68,25 @@ func (udp *UdpServer) Start(stop chan bool) error {
         for {
             select {
             case <-stop:
-                jww.FEEDBACK.Println("Stopping UDP server.")
+                udp.log.Infof("stopping UDP server")
                 return
 
             default:
                 n, addr, err := srvConn.ReadFromUDP(buf)
                 if err != nil {
-                    jww.ERROR.Println("UDP Server error: ", err)
+                    udp.log.Error("UDP: ", err)
                     continue
                 }
 
                 b := newIotDev(addr.IP.String(), &Noop{})
                 err = b.parseDiscoveryBroadcast(buf[0:n])
                 if err != nil {
-                    jww.ERROR.Println(err)
+                    udp.log.Error(err)
                 }
 
                 _, err = udp.handleDiscovery(b)
                 if err != nil {
-                    jww.ERROR.Println(err)
+                    udp.log.Error(err)
                 }
             }
         }
@@ -105,8 +106,7 @@ func (udp *UdpServer) handleDiscovery(dev *iotDev) ([]byte, error) {
     }
 
     if len(ips) == 0 {
-        msg := fmt.Sprintf("WiFiItf %f has no IP addresses.\n", udp.itf.Name)
-        return nil, errors.New(msg)
+        return nil, errors.Errorf("%s has no IP addresses", udp.itf.Name)
     }
 
     return dev.sendCmd(udp.cfg.UdpPort, newServerCmd(ips[0], udp.cfg.TcpPort))

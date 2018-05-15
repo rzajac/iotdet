@@ -37,6 +37,6 @@ func NewDetector(itfName string, log *logrus.Entry) (*Detector, error) {
 
 // Detect detects IoT access points in range.
 func (d *Detector) Detect() ([]*DevAP, error) {
-    d.log.Infof("Scanning for new IoT devices using %s interface...", d.itf.Name)
-    return d.itf.scanForIotAPs()
+    d.log.Infof("Scanning for new IoT devices using %s interface...", d.itf.itf.Name)
+    return d.itf.Scan()
 }
