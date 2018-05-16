@@ -14,14 +14,23 @@
 
 package hq
 
-import "net"
+import "encoding/json"
 
-type serverCmd struct {
-    Cmd  string `json:"cmd"`
-    Ip   net.IP `json:"ip"`
-    Port int    `json:"port"`
+type CmdConfig struct {
+    Cmd      string `json:"cmd"`
+    ApName   string `json:"ap_name"`
+    ApPass   string `json:"ap_pass"`
+    MQTTIP   string `json:"mqtt_ip"`
+    MQTTPort int    `json:"mqtt_port"`
+    MQTTUser string `json:"mqtt_user"`
+    MQTTPass string `json:"mqtt_pass"`
 }
 
-func newServerCmd(ip net.IP, port int) *serverCmd {
-    return &serverCmd{Cmd: "setSrv", Ip: ip, Port: port}
+func NewApCmd(apName, apPass string) *CmdConfig {
+    return &CmdConfig{Cmd: "setAp"}
+}
+
+func (c *CmdConfig) GetCommand() []byte {
+    cmd, _ := json.Marshal(c)
+    return cmd
 }

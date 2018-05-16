@@ -4,6 +4,7 @@ import (
     "github.com/spf13/cobra"
     "os"
     "github.com/rzajac/iotdet/pkg/hq"
+    "fmt"
 )
 
 var detectCmd = &cobra.Command{
@@ -11,6 +12,7 @@ var detectCmd = &cobra.Command{
     Short: "Detect new agents.",
     Long:  `Detect new agents.`,
     Run: func(cmd *cobra.Command, args []string) {
+        fmt.Println("DET")
         cfg, err := config()
         if err != nil {
             log.Error(err)

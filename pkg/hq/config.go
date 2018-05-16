@@ -29,8 +29,6 @@ type Config struct {
     DetInterval time.Duration // The interval for scanning for new agents.
 
     Cipher Cipher // The cipher to use for communication with agent devices.
-    AesKey []byte // AES encryption key
-    AesVi  []byte // AES CBC initialization vector.
 
     HQApName string // The HQ access point name agents use to communicate.
     HQApPass string // The HQ access point password.

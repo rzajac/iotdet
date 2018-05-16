@@ -20,5 +20,5 @@ const CMD_MAX_LENGTH = 512
 // Cmd is an interface which all commands must implement.
 type Cmd interface {
     // GetCommand returns command string representation.
-    GetCommand() string
+    GetCommand() []byte
 }
