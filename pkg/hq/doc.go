@@ -12,14 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
-
-type responseCmd struct {
-    Success bool   `json:"success"`
-    Msg     string `json:"msg"`
-    Code    int    `json:"code"`
-}
-
-func newResponseCmd(success bool, msg string, code int) *responseCmd {
-    return &responseCmd{Success: success, Msg: msg, Code: code}
-}
+// Package iotdet detects and configures new IoT devices
+// in reach of specified wifi interface.
+package hq

@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
-type discoveryCmd struct {
-    Cmd    string `json:"cmd"`
-    Mac    string `json:"mac"`
-    Memory uint   `json:"memory"`
+// The maximum expected command length.
+const CMD_MAX_LENGTH = 512
+
+// Cmd is an interface which all commands must implement.
+type Cmd interface {
+    // GetCommand returns command string representation.
+    GetCommand() string
 }

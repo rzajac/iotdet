@@ -1,0 +1,36 @@
+hq:
+  # The cipher name to use for encrypting communication with the agents.
+  cipher: aes
+
+  detect:
+    # The wireless interface name to listen for new agents on.
+    itf: wlp3s0
+    # The password for agent's access point.
+    ap_pass: password
+    # The IP agent assigns to itself when creating access point.
+    agent_ip: 192.168.42.1
+    # The IP to use after connecting to agent's access point.
+    use_ip: 192.168.42.2
+    # The TCP port agents listen on for configuration commands.
+    cmd_port: 7802
+    # The interval for scanning for new agents in seconds.
+    scan_interval: 3
+
+  access_point:
+    # The HQ access point name agents use to communicate.
+    name: SanFrancisco
+    # The HQ access point password.
+    pass: password
+
+  mqtt:
+    ip: 192.168.1.100
+    port: 8883
+    user: user
+    pass: password
+
+  cipher_aes:
+    # The AES cipher configuration shared between IoT devices and
+    # the rest of the system. You may use openssl rand -hex 16
+    # to generate them.
+    key: 2b7e151628aed2a6abf7158809cf4f3c
+    vi: 000102030405060708090a0b0c0d0e0f

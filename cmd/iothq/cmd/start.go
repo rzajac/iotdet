@@ -2,10 +2,9 @@ package cmd
 
 import (
     "github.com/spf13/cobra"
-    "github.com/spf13/viper"
-    "github.com/rzajac/iotdet/pkg/iotdet"
     "os"
     "time"
+    "github.com/rzajac/iotdet/pkg/hq"
 )
 
 var startCmd = &cobra.Command{
@@ -13,13 +12,17 @@ var startCmd = &cobra.Command{
     Short: "Start IoT detection and configuration service.",
     Long:  `Start IoT detection and configuration service.`,
     Run: func(cmd *cobra.Command, args []string) {
-        itfName := viper.GetString("iotdet.itf_name")
+        cfg, err := config()
+        if err != nil {
+            log.Error(err)
+            os.Exit(1)
+        }
 
-        ctrl := make(iotdet.CtrlChanel)
+        ctrl := make(hq.CtrlChanel)
 
         go func() {
             for {
-                <-time.After(1 * time.Second)
+                <-time.After(cfg.DetInterval)
                 select {
                 case cmd := <-ctrl:
                     if cmd == "STOP" {
@@ -36,7 +39,7 @@ var startCmd = &cobra.Command{
         <-time.After(10 * time.Second)
         ctrl <- "STOP"
 
-        detector, err := iotdet.NewDetector(itfName, log)
+        detector, err := hq.NewDetector(cfg)
         if err != nil {
             log.Error(err)
             os.Exit(1)

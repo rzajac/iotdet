@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
 import (
     "github.com/pkg/errors"
@@ -82,40 +82,67 @@ type WiFiItf struct {
     discCh stopChanel
 }
 
-// Configure configures IoT devices.
-func (w *WiFiItf) Configure(myIP, iotIP string, iotPort int, name, pass string, cipher *Cipher) error {
-    var err error
-    var aps []*DevAP
+// Scan returns a list of new access points in range
+// created by agents in detection phase.
+func (w *WiFiItf) Scan() ([]*AgentAP, error) {
+    w.Lock()
+    defer w.Unlock()
 
-    if aps, err = w.scan(); err != nil {
+    if err := w.makeSureIsUp(); err != nil {
+        return nil, err
+    }
+
+    out, err := exec.Command("bash", "-c", "iwlist "+w.itf.Name+" scan | egrep 'ESSID:|Address:'").CombinedOutput()
+    if err != nil {
+        return nil, err
+    }
+
+    lines := strings.Split(string(out), "\n")
+    lineCount := len(lines)
+
+    var aps []*AgentAP
+    for i := 0; i < lineCount; i += 2 {
+        if i+1 > lineCount-1 {
+            break
+        }
+
+        mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
+        name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
+
+        w.log.Debugf("found new agent %s access point", name)
+        ap := NewAgentAP(name, mac)
+
+        if ap.IsIotAp() {
+            aps = append(aps, ap)
+        }
+    }
+
+    return aps, nil
+}
+
+// Configure configures IoT devices.
+func (w *WiFiItf) Configure(ap *AgentAP, cfg *Config) error {
+    w.Lock()
+    defer w.Unlock()
+
+    if err := w.connect(ap.Name, cfg.DetApPass); err != nil {
+        w.log.Error(err)
+    }
+
+    if err := w.setIP(cfg.DetUseIP); err != nil {
         return err
     }
 
-    var iotDev *iotDev
-    for _, ap := range aps {
-        if err = ap.Connect(pass); err != nil {
-            w.log.Error(err)
-            ap.Disconnect()
-            continue
-        }
-
-        if err = ap.Itf.setIP(myIP); err != nil {
-            ap.Disconnect()
-            return err
-        }
-
-        if err = ap.Itf.ping(iotIP); err != nil {
-            ap.Disconnect()
-            return err
-        }
-
-        iotDev = newIotDev(iotIP, cipher)
-        if _, err = iotDev.sendCmd(iotPort, newApCmd(name, pass)); err != nil {
-            w.log.Error(err)
-        }
-
-        ap.Disconnect()
+    if err := w.ping(cfg.DetAgentIP); err != nil {
+        return err
     }
+
+    _ = NewAgent(ap.Name, ap.Bssid, cfg.DetAgentIP, cfg)
+    //if _, err := agent.SendCmd(newApCmd(name, pass)); err != nil {
+    //    w.log.Error(err)
+    //}
+    //
+    //ap.Disconnect()
 
     return nil
 }
@@ -205,7 +232,6 @@ func (w *WiFiItf) isUp() bool {
             return false
         }
     }
-
     return true
 }
 
@@ -226,12 +252,10 @@ func (w *WiFiItf) makeSureIsUp() error {
     if w.isUp() {
         return nil
     }
-
     w.log.Debugf("waiting for %s to became available", w.itf.Name)
     if err := w.up(); err != nil {
         return err
     }
-
     stopCh := runUntil(func() bool {
         return w.isUp()
     }, 1*time.Second, 5)
@@ -244,41 +268,6 @@ func (w *WiFiItf) makeSureIsUp() error {
     w.log.Debugf("% is up", w.itf.Name)
 
     return nil
-}
-
-// scan returns a list of IoT WiFi access points in range.
-func (w *WiFiItf) scan() ([]*DevAP, error) {
-    var aps []*DevAP
-
-    if err := w.makeSureIsUp(); err != nil {
-        return aps, err
-    }
-
-    out, err := exec.Command("bash", "-c", "iwlist "+w.itf.Name+" scan | egrep 'ESSID:|Address:'").CombinedOutput()
-    if err != nil {
-        return aps, err
-    }
-
-    lines := strings.Split(string(out), "\n")
-    lineCount := len(lines)
-
-    for i := 0; i < lineCount; i += 2 {
-        if i+1 > lineCount-1 {
-            break
-        }
-
-        mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
-        name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
-
-        w.log.Debugf("found %s access point", name)
-        dev := NewDevAP(name, mac, w)
-
-        if dev.IsIotAp() {
-            aps = append(aps, NewDevAP(name, mac, w))
-        }
-    }
-
-    return aps, nil
 }
 
 // wpaConfigWrite writes wpa_supplicant configuration file.

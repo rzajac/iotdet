@@ -12,38 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
 import (
-    "github.com/sirupsen/logrus"
     "time"
 )
 
-// Detector is responsible for detecting and configuring new IoT
-// devices using specified WiFi interface.
+// Detector is responsible for detecting and configuring new IoT devices.
 type Detector struct {
-    itf *WiFiItf
-    log *logrus.Entry
+    cfg  *Config
+    itf  *WiFiItf
+    ctrl CtrlChanel
 }
 
 // NewDetector returns new Detector instance.
-func NewDetector(itfName string, log *logrus.Entry) (*Detector, error) {
-    itf, err := GetInterface(itfName, log)
+func NewDetector(cfg *Config) (*Detector, error) {
+    itf, err := GetInterface(cfg.DetItfName, cfg.Log)
     if err != nil {
         return nil, err
     }
-
-    return &Detector{itf: itf, log: log}, nil
+    return &Detector{
+        cfg:  cfg,
+        itf:  itf,
+        ctrl: make(CtrlChanel)}, nil
 }
 
-func (d *Detector) Start(period time.Duration) (CtrlChanel, error) {
-    ctrl := make(CtrlChanel)
-
+func (d *Detector) Start() error {
     go func() {
         for {
-            <-time.After(period * time.Second)
+            <-time.After(d.cfg.DetInterval)
             select {
-            case cmd := <-ctrl:
+            case cmd := <-d.ctrl:
                 if cmd == "STOP" {
                     return
                 }
@@ -53,11 +52,11 @@ func (d *Detector) Start(period time.Duration) (CtrlChanel, error) {
         }
     }()
 
-    return ctrl, nil
+    return nil
 }
 
 // Detect detects IoT access points in range.
-func (d *Detector) Detect() ([]*DevAP, error) {
-    d.log.Infof("Scanning for new IoT devices using %s interface...", d.itf.itf.Name)
-    return d.itf.scan()
+func (d *Detector) Detect() ([]*AgentAP, error) {
+    d.cfg.Log.Infof("Scanning for new IoT devices using %s interface...", d.itf.itf.Name)
+    return nil, nil
 }

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
-type apCmd struct {
-    Cmd  string `json:"cmd"`
-    Name string `json:"name"`
-    Pass string `json:"pass"`
+type responseCmd struct {
+    Success bool   `json:"success"`
+    Msg     string `json:"msg"`
+    Code    int    `json:"code"`
 }
 
-func newApCmd(apName, apPass string) *apCmd {
-    return &apCmd{Cmd: "setAp", Name: apName, Pass: apPass}
+func newResponseCmd(success bool, msg string, code int) *responseCmd {
+    return &responseCmd{Success: success, Msg: msg, Code: code}
 }

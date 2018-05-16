@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
-import "net"
+type Noop struct{}
 
-type serverCmd struct {
-    Cmd  string `json:"cmd"`
-    Ip   net.IP `json:"ip"`
-    Port int    `json:"port"`
+func (nd *Noop) Encrypt(data []byte) ([]byte, error) {
+    return data, nil
 }
 
-func newServerCmd(ip net.IP, port int) *serverCmd {
-    return &serverCmd{Cmd: "setSrv", Ip: ip, Port: port}
+func (nd *Noop) Decrypt(data []byte) ([]byte, error) {
+    return data, nil
 }

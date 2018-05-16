@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
-type Noop struct{}
-
-func (nd *Noop) Encrypt(data []byte) ([]byte, error) {
-    return data, nil
-}
-
-func (nd *Noop) Decrypt(data []byte) ([]byte, error) {
-    return data, nil
+type discoveryCmd struct {
+    Cmd    string `json:"cmd"`
+    Mac    string `json:"mac"`
+    Memory uint   `json:"memory"`
 }

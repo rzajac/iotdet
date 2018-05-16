@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
-// The maximum expected JSON message length.
-const JSON_MAX_LENGTH = 512
+import "net"
+
+type serverCmd struct {
+    Cmd  string `json:"cmd"`
+    Ip   net.IP `json:"ip"`
+    Port int    `json:"port"`
+}
+
+func newServerCmd(ip net.IP, port int) *serverCmd {
+    return &serverCmd{Cmd: "setSrv", Ip: ip, Port: port}
+}

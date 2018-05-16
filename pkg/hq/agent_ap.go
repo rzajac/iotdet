@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iotdet
+package hq
 
 import (
     "regexp"
@@ -21,33 +21,21 @@ import (
 // iotWiFiRegEx is regular expression matching IoT access point names.
 var iotWiFiRegEx *regexp.Regexp = regexp.MustCompile("IOT_([[:xdigit:]]{2}){3}")
 
-// DevAP represents IoT device access point.
-// IoT devices create access points when they are waiting to be discovered
-// and configured.
-type DevAP struct {
+// AgentAP represents access point agent creates during discovery phase.
+type AgentAP struct {
     Name  string   // Access point name.
     Bssid string   // Access point BSSID.
-    Itf   *WiFiItf // The wifi interface we use to connect to this access point.
 }
 
-// NewDevAP returns new DevAP instance.
-func NewDevAP(name, mac string, itf *WiFiItf) *DevAP {
-    return &DevAP{
+// NewAgentAP returns new AgentAP instance.
+func NewAgentAP(name, mac string) *AgentAP {
+    return &AgentAP{
         Name:  name,
         Bssid: mac,
-        Itf:   itf,
     }
 }
 
 // IsIotAp checks if access point name matches IoT device.
-func (ap *DevAP) IsIotAp() bool {
+func (ap *AgentAP) IsIotAp() bool {
     return iotWiFiRegEx.MatchString(ap.Name)
-}
-
-func (ap *DevAP) Connect(pass string) error {
-    return ap.Itf.connect(ap.Name, pass)
-}
-
-func (ap *DevAP) Disconnect() {
-    ap.Itf.disconnect()
 }

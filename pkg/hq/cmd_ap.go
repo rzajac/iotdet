@@ -12,6 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iotdet detects and configures new IoT devices
-// in reach of specified wifi interface.
-package iotdet
+package hq
+
+type apCmd struct {
+    Cmd      string `json:"cmd"`
+    ApName   string `json:"ap_name"`
+    ApPass   string `json:"ap_pass"`
+    MQTTIP   string `json:"mqtt_ip"`
+    MQTTPort int    `json:"mqtt_port"`
+    MQTTUser string `json:"mqtt_user"`
+    MQTTPass string `json:"mqtt_pass"`
+}
+
+func NewApCmd(apName, apPass string) *apCmd {
+    return &apCmd{Cmd: "setAp"}
+}
