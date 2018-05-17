@@ -19,7 +19,7 @@ import (
 )
 
 // iotWiFiRegEx is regular expression matching IoT access point names.
-var iotWiFiRegEx *regexp.Regexp = regexp.MustCompile("IOT_([[:xdigit:]]{2}){3}")
+var iotWiFiRegEx = regexp.MustCompile("AGENT_([[:xdigit:]]{2}){3}")
 
 // AgentAP represents access point agent creates during discovery phase.
 type AgentAP struct {

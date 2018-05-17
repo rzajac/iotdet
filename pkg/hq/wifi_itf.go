@@ -82,6 +82,11 @@ type WiFiItf struct {
     discCh stopChanel
 }
 
+// Name returns interface name.
+func (w *WiFiItf) Name() string {
+    return w.itf.Name
+}
+
 // Scan returns a list of new access points in range
 // created by agents in detection phase.
 func (w *WiFiItf) Scan() ([]*AgentAP, error) {
@@ -109,9 +114,7 @@ func (w *WiFiItf) Scan() ([]*AgentAP, error) {
         mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
         name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
 
-        w.log.Debugf("found new agent %s access point", name)
         ap := NewAgentAP(name, mac)
-
         if ap.IsIotAp() {
             aps = append(aps, ap)
         }

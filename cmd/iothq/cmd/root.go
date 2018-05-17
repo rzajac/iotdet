@@ -17,13 +17,7 @@ import (
 // cfgFile holds path to the configuration file.
 var cfgFile string
 
-// log provides global logger.
-var log *logrus.Entry
-
 func init() {
-    logrus.SetFormatter(&logrus.JSONFormatter{TimestampFormat: "2006-01-02T15:04:05.999999-07:00"})
-    log = logrus.WithFields(logrus.Fields{"service": "iotdet"})
-
     cobra.OnInitialize(onInitialize)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
     rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
@@ -35,17 +29,19 @@ func init() {
 // Execute executes root command.
 func Execute() {
     if err := rootCmd.Execute(); err != nil {
-        log.Error(err)
+        logrus.WithFields(logrus.Fields{"service": "hq"}).Error(err)
         os.Exit(1)
     }
 }
 
 // rootCmd is the main command for the iotdet binary.
 var rootCmd = &cobra.Command{
-    Use:     "iothq",
-    Version: getVersion(),
-    Short:   "IoT HQ.",
-    Long:    `IoT HQ.`,
+    Use:           "iothq",
+    Version:       getVersion(),
+    Short:         "IoT HQ.",
+    Long:          `IoT HQ.`,
+    SilenceUsage:  true,
+    SilenceErrors: true,
 }
 
 // onInitialize runs before command Execute function is run.
@@ -111,10 +107,10 @@ func config() (*hq.Config, error) {
         if err != nil {
             return nil, errors.New("invalid AES vi value")
         }
-        cfg.Cipher = hq.NewAesDrv(key, vi)
+        cfg.Cipher = hq.NewCipherAES(key, vi)
 
     case "none":
-        cfg.Cipher = &hq.Noop{}
+        cfg.Cipher = hq.NewNoopCipher()
 
     default:
         return nil, errors.Errorf("invalid cipher name %s", cn)
@@ -131,7 +127,7 @@ func config() (*hq.Config, error) {
     cfg.MQTTPass = viper.GetString("hq.mqtt.password")
 
     // Setup logger.
-    cfg.Log = log
+    cfg.Log = logrus.WithFields(logrus.Fields{"service": "hq"})
 
     return cfg, nil
 }

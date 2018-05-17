@@ -2,7 +2,6 @@ package cmd
 
 import (
     "github.com/spf13/cobra"
-    "os"
     "github.com/rzajac/iotdet/pkg/hq"
     "fmt"
 )
@@ -11,24 +10,27 @@ var detectCmd = &cobra.Command{
     Use:   "detect",
     Short: "Detect new agents.",
     Long:  `Detect new agents.`,
-    Run: func(cmd *cobra.Command, args []string) {
-        fmt.Println("DET")
+    RunE: func(cmd *cobra.Command, args []string) error {
         cfg, err := config()
         if err != nil {
-            log.Error(err)
-            os.Exit(1)
+            return err
         }
 
         detector, err := hq.NewDetector(cfg)
         if err != nil {
-            log.Error(err)
-            os.Exit(1)
+            return err
         }
 
-        if _, err := detector.Detect(); err != nil {
-            log.Error(err)
-            os.Exit(1)
+        aps, err := detector.Detect()
+        if err != nil {
+            return err
         }
+
+        for _, ap := range aps {
+            fmt.Printf("AP: %s BSSID: %s\n", ap.Name, ap.Bssid)
+        }
+
+        return nil
     },
 }
 

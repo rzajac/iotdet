@@ -111,3 +111,19 @@ func (a *Agent) connect() (net.Conn, error) {
 
     return conn, err
 }
+
+// TODO
+//func (iot *iotDev) parseDiscoveryBroadcast(json_msg []byte) error {
+//    var disc discoveryCmd
+//
+//    jww.DEBUG.Printf("UDP message: %s\nFrom: %s", string(json_msg), iot.Ip)
+//    if err := json.Unmarshal(json_msg, &disc); err != nil {
+//        return err
+//    }
+//
+//    if disc.Cmd != "iotDiscovery" {
+//        return errors.New("not discovery broadcast")
+//    }
+//
+//    return nil
+//}

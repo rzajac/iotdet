@@ -37,6 +37,13 @@ func NewDetector(cfg *Config) (*Detector, error) {
         ctrl: make(CtrlChanel)}, nil
 }
 
+// Detect detects IoT access points in range.
+func (d *Detector) Detect() ([]*AgentAP, error) {
+    d.cfg.Log.Infof("Scanning for new IoT devices using %s interface...", d.itf.Name())
+    return d.itf.Scan()
+}
+
+// Start starts detection service.
 func (d *Detector) Start() error {
     go func() {
         for {
@@ -55,8 +62,7 @@ func (d *Detector) Start() error {
     return nil
 }
 
-// Detect detects IoT access points in range.
-func (d *Detector) Detect() ([]*AgentAP, error) {
-    d.cfg.Log.Infof("Scanning for new IoT devices using %s interface...", d.itf.itf.Name)
-    return nil, nil
+// Stop stops detection service.
+func (d *Detector) Stop() {
+    d.ctrl <- "STOP"
 }

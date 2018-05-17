@@ -19,21 +19,23 @@ import (
     "crypto/cipher"
 )
 
-type AesDrv struct {
+// AES represents AES encoder / decoder.
+type CipherAES struct {
     key    []byte // AES encryption key.
     vector []byte // AES CBC initialization vector.
     keyLen int    // AES key length.
 }
 
-func NewAesDrv(key, vector []byte) *AesDrv {
-    return &AesDrv{
+// NewCipherAES returns new AES encoder / decoder.
+func NewCipherAES(key, vector []byte) *CipherAES {
+    return &CipherAES{
         key:    key,
         vector: vector,
         keyLen: len(key),
     }
 }
 
-func (ad *AesDrv) Encrypt(data []byte) ([]byte, error) {
+func (ad *CipherAES) Encrypt(data []byte) ([]byte, error) {
     var err error
 
     dataLength := len(data)
@@ -50,7 +52,7 @@ func (ad *AesDrv) Encrypt(data []byte) ([]byte, error) {
     return data, nil
 }
 
-func (ad *AesDrv) Decrypt(data []byte) ([]byte, error) {
+func (ad *CipherAES) Decrypt(data []byte) ([]byte, error) {
     var err error
 
     var block cipher.Block

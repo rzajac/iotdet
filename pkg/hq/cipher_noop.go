@@ -14,12 +14,18 @@
 
 package hq
 
-type Noop struct{}
+// CipherNoop represents no operation encoder decoder.
+type CipherNoop struct{}
 
-func (nd *Noop) Encrypt(data []byte) ([]byte, error) {
+// NewNoopCipher returns new instance of CipherNoop.
+func NewNoopCipher() *CipherNoop {
+    return &CipherNoop{}
+}
+
+func (nd *CipherNoop) Encrypt(data []byte) ([]byte, error) {
     return data, nil
 }
 
-func (nd *Noop) Decrypt(data []byte) ([]byte, error) {
+func (nd *CipherNoop) Decrypt(data []byte) ([]byte, error) {
     return data, nil
 }

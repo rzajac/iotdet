@@ -14,6 +14,9 @@
 
 package hq
 
+const CIPHER_NONE = "none"
+const CIPHER_AES = "aes"
+
 // Cipher is an interface for encrypting
 // and decrypting IoT detection messages.
 type Cipher interface {
