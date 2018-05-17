@@ -51,10 +51,18 @@ func (d *Detector) Start() error {
             select {
             case cmd := <-d.ctrl:
                 if cmd == "STOP" {
+                    d.cfg.Log.Info("stopping detector")
                     return
                 }
 
             default:
+                aps, err := d.Detect()
+                if err != nil {
+                    d.cfg.Log.Error(err)
+                    continue
+                }
+                // TODO: configure agents.
+                d.cfg.Log.Infof("found %d agents", len(aps))
             }
         }
     }()
@@ -65,4 +73,14 @@ func (d *Detector) Start() error {
 // Stop stops detection service.
 func (d *Detector) Stop() {
     d.ctrl <- "STOP"
+}
+
+// Detect is a helper function which detects new agents.
+func Detect(cfg *Config) ([]*AgentAP, error) {
+    detector, err := NewDetector(cfg)
+    if err != nil {
+        return nil, err
+    }
+
+    return detector.Detect()
 }

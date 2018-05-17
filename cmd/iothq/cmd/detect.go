@@ -16,18 +16,21 @@ var detectCmd = &cobra.Command{
             return err
         }
 
-        detector, err := hq.NewDetector(cfg)
+        aps, err := hq.Detect(cfg)
         if err != nil {
             return err
         }
 
-        aps, err := detector.Detect()
+        c, err := hq.NewMQTTClient(cfg)
         if err != nil {
             return err
         }
 
         for _, ap := range aps {
-            fmt.Printf("AP: %s BSSID: %s\n", ap.Name, ap.Bssid)
+            agent := fmt.Sprintf("AP: %s BSSID: %s", ap.Name, ap.Bssid)
+            fmt.Println(agent + "\n")
+            token := c.Publish("test/topic", 0, false, agent)
+            token.Wait()
         }
 
         return nil

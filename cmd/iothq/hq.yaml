@@ -23,10 +23,10 @@ hq:
     pass: password
 
   mqtt:
-    ip: 192.168.1.100
-    port: 8883
-    user: user
-    pass: password
+    ip: 127.0.0.1
+    port: 1883
+    user: agent
+    pass: test
 
   cipher_aes:
     # The AES cipher configuration shared between IoT devices and

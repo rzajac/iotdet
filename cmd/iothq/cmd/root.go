@@ -97,7 +97,7 @@ func config() (*hq.Config, error) {
     // Cipher configuration.
     cn := viper.GetString("hq.cipher")
     switch cn {
-    case "aes":
+    case hq.CIPHER_AES:
         key, err := hex.DecodeString(viper.GetString("hq.cipher_aes.key"))
         if err != nil {
             return nil, errors.New("invalid AES key value")
@@ -109,7 +109,7 @@ func config() (*hq.Config, error) {
         }
         cfg.Cipher = hq.NewCipherAES(key, vi)
 
-    case "none":
+    case hq.CIPHER_NONE:
         cfg.Cipher = hq.NewNoopCipher()
 
     default:
@@ -124,7 +124,7 @@ func config() (*hq.Config, error) {
     cfg.MQTTIP = viper.GetString("hq.mqtt.ip")
     cfg.MQTTPort = viper.GetInt("hq.mqtt.port")
     cfg.MQTTUser = viper.GetString("hq.mqtt.user")
-    cfg.MQTTPass = viper.GetString("hq.mqtt.password")
+    cfg.MQTTPass = viper.GetString("hq.mqtt.pass")
 
     // Setup logger.
     cfg.Log = logrus.WithFields(logrus.Fields{"service": "hq"})
