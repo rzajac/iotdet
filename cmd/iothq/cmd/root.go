@@ -18,7 +18,7 @@ import (
 var cfgFile string
 
 // cfg represents global configuration.
-var cfg *hq.Config
+var cfg *hq.HQ
 
 func init() {
     cobra.OnInitialize(onInitialize)
@@ -88,8 +88,8 @@ func getVersion() string {
 }
 
 // config returns validated configuration structure.
-func config() (*hq.Config, error) {
-    c := &hq.Config{}
+func config() (*hq.HQ, error) {
+    c := &hq.HQ{}
 
     // New agent detection configuration.
     c.DetItfName = viper.GetString("hq.detect.itf")

@@ -20,13 +20,13 @@ import (
 
 // Detector is responsible for detecting and configuring new IoT devices.
 type Detector struct {
-    cfg  *Config
+    cfg  *HQ
     itf  *WiFiItf
     ctrl CtrlChanel
 }
 
 // NewDetector returns new Detector instance.
-func NewDetector(cfg *Config) (*Detector, error) {
+func NewDetector(cfg *HQ) (*Detector, error) {
     itf, err := GetInterface(cfg)
     if err != nil {
         return nil, err
@@ -76,7 +76,7 @@ func (d *Detector) Stop() {
 }
 
 // Detect is a helper function which detects new agents.
-func Detect(cfg *Config) ([]*AgentAP, error) {
+func Detect(cfg *HQ) ([]*AgentAP, error) {
     detector, err := NewDetector(cfg)
     if err != nil {
         return nil, err

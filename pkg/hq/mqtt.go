@@ -20,7 +20,7 @@ import (
     "github.com/eclipse/paho.mqtt.golang"
 )
 
-func NewMQTTClient(cfg *Config) (mqtt.Client, error) {
+func NewMQTTClient(cfg *HQ) (mqtt.Client, error) {
     opts := mqtt.NewClientOptions()
     opts.AddBroker(fmt.Sprintf("tcp://%s:%d", cfg.MQTTIP, cfg.MQTTPort))
     opts.SetClientID("iothq")

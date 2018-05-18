@@ -19,8 +19,18 @@ import (
     "github.com/sirupsen/logrus"
 )
 
-// Config represents HQ configuration.
-type Config struct {
+var hq *HQ
+
+func init() {
+    hq = &HQ{Log:NewNoopLogger()}
+}
+
+func Init(log *logrus.Entry) error {
+
+}
+
+// HQ represents HQ configuration.
+type HQ struct {
     DetItfName  string        // The interface name to use for new agents detection.
     DetApPass   string        // The password for agent's access point.
     DetAgentIP  string        // The IP agent assigns to itself when creating access point.
@@ -40,12 +50,12 @@ type Config struct {
     MQTTPass string
 
     // Logger configuration.
-    Log      *logrus.Entry
+    Log      Logger
     LogLevel int
 }
 
 // GetConfigCmd returns configuration command.
-func (c *Config) GetConfigCmd() *CmdConfig {
+func (c *HQ) GetConfigCmd() *CmdConfig {
     cmd := NewConfigCmd()
 
     cmd.ApName = c.HQApName

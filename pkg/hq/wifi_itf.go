@@ -42,7 +42,7 @@ func init() {
 }
 
 // GetInterface returns WiFi interface or error if it does not exist.
-func GetInterface(cfg *Config) (*WiFiItf, error) {
+func GetInterface(cfg *HQ) (*WiFiItf, error) {
     if itf, ok := interfaces[cfg.DetItfName]; ok {
         return itf, nil
     }
@@ -77,7 +77,7 @@ func GetInterface(cfg *Config) (*WiFiItf, error) {
 type WiFiItf struct {
     *sync.Mutex
     itf    net.Interface
-    cfg    *Config
+    cfg    *HQ
     discCh stopChanel
 }
 

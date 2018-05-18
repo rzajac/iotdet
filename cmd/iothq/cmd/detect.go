@@ -28,8 +28,7 @@ var detectCmd = &cobra.Command{
 
         for _, ap := range aps {
             fmt.Printf("found new agent: %s\n", ap.Name)
-            token := c.Publish("hq/new_agent", 0, false, ap.MAC())
-            token.Wait()
+            c.Publish("hq/new_agent", 0, false, ap.MAC()).Wait()
         }
 
         return nil

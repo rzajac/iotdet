@@ -13,11 +13,6 @@ var startCmd = &cobra.Command{
     Short: "Start IoT detection and configuration service.",
     Long:  `Start IoT detection and configuration service.`,
     RunE: func(cmd *cobra.Command, args []string) error {
-        cfg, err := config()
-        if err != nil {
-            return err
-        }
-
         // Handle CTRL+C.
         sig := make(chan os.Signal, 2)
         signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -27,6 +22,7 @@ var startCmd = &cobra.Command{
             return err
         }
 
+        // Start new agent detection goroutine.
         if err := det.Start(); err != nil {
             return err
         }

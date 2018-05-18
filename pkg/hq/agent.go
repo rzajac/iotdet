@@ -29,11 +29,11 @@ type Agent struct {
     IP      string // The agent's IP address.
     CmdPort int    // The agent's command server port.
 
-    cfg *Config
+    cfg *HQ
 }
 
 // NewAgent returns new instance of Agent.
-func NewAgent(name, ip string, cfg *Config) *Agent {
+func NewAgent(name, ip string, cfg *HQ) *Agent {
     return &Agent{
         Name: name,
         IP:   ip,
