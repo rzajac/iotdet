@@ -17,8 +17,14 @@ package hq
 // The maximum expected command length.
 const CMD_MAX_LENGTH = 512
 
-// Cmd is an interface which all commands must implement.
-type Cmd interface {
-    // GetCommand returns command string representation.
-    GetCommand() []byte
+// MarshalCmd is an interface which all commands must implement.
+type MarshalCmd interface {
+    // MarshalCmd marshals command.
+    MarshalCmd() []byte
+}
+
+// MarshalCmd is an interface which all commands must implement.
+type UnmarshalCmd interface {
+    // MarshallCmd marshals command.
+    UnmarshalCmd(data []byte)
 }

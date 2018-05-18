@@ -16,10 +16,14 @@ package hq
 
 import "encoding/json"
 
+// CmdConfig represents structure agents
+// expect to receive during detection phase.
 type CmdConfig struct {
     Cmd      string `json:"cmd"`
+
     ApName   string `json:"ap_name"`
     ApPass   string `json:"ap_pass"`
+
     MQTTIP   string `json:"mqtt_ip"`
     MQTTPort int    `json:"mqtt_port"`
     MQTTUser string `json:"mqtt_user"`
@@ -31,7 +35,7 @@ func NewConfigCmd() *CmdConfig {
     return &CmdConfig{Cmd: "cfg"}
 }
 
-func (c *CmdConfig) GetCommand() []byte {
+func (c *CmdConfig) MarshalCmd() []byte {
     cmd, _ := json.Marshal(c)
     return cmd
 }

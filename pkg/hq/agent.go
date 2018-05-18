@@ -42,7 +42,7 @@ func NewAgent(name, ip string, cfg *HQ) *Agent {
 }
 
 // SendCmd sends command to the agent.
-func (a *Agent) SendCmd(cmd Cmd) ([]byte, error) {
+func (a *Agent) SendCmd(cmd MarshalCmd) ([]byte, error) {
     c, err := json.Marshal(cmd)
     if err != nil {
         return nil, err
@@ -119,7 +119,7 @@ func (a *Agent) connect() (net.Conn, error) {
 //        return err
 //    }
 //
-//    if disc.Cmd != "iotDiscovery" {
+//    if disc.MarshalCmd != "iotDiscovery" {
 //        return errors.New("not discovery broadcast")
 //    }
 //
