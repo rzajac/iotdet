@@ -11,14 +11,14 @@ var detectCmd = &cobra.Command{
     Short: "Detect new agents.",
     Long:  `Detect new agents.`,
     RunE: func(cmd *cobra.Command, args []string) error {
-        cfg, err := config()
+        aps, err := hq.Detect(cfg)
         if err != nil {
             return err
         }
 
-        aps, err := hq.Detect(cfg)
-        if err != nil {
-            return err
+        // Nothing found.
+        if len(aps) == 0 {
+            return nil
         }
 
         c, err := hq.NewMQTTClient(cfg)
@@ -27,9 +27,8 @@ var detectCmd = &cobra.Command{
         }
 
         for _, ap := range aps {
-            agent := fmt.Sprintf("AP: %s BSSID: %s", ap.Name, ap.Bssid)
-            fmt.Println(agent + "\n")
-            token := c.Publish("test/topic", 0, false, agent)
+            fmt.Printf("found new agent: %s\n", ap.Name)
+            token := c.Publish("hq/new_agent", 0, false, ap.MAC())
             token.Wait()
         }
 

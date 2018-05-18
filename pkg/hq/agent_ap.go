@@ -16,26 +16,28 @@ package hq
 
 import (
     "regexp"
+    "strings"
 )
 
-// iotWiFiRegEx is regular expression matching IoT access point names.
-var iotWiFiRegEx = regexp.MustCompile("AGENT_([[:xdigit:]]{2}){3}")
+// agentAPRegEx is regular expression matching IoT access point names.
+var agentAPRegEx = regexp.MustCompile("AGENT_([[:xdigit:]]{2}){6}")
 
 // AgentAP represents access point agent creates during discovery phase.
 type AgentAP struct {
-    Name  string   // Access point name.
-    Bssid string   // Access point BSSID.
+    Name string // Access point name.
 }
 
 // NewAgentAP returns new AgentAP instance.
-func NewAgentAP(name, mac string) *AgentAP {
-    return &AgentAP{
-        Name:  name,
-        Bssid: mac,
-    }
+func NewAgentAP(name string) *AgentAP {
+    return &AgentAP{Name:  name}
+}
+
+// MAC returns access point MAC address.
+func (ap *AgentAP) MAC() string {
+    return strings.Split(ap.Name, "_")[1]
 }
 
 // IsIotAp checks if access point name matches IoT device.
 func (ap *AgentAP) IsIotAp() bool {
-    return iotWiFiRegEx.MatchString(ap.Name)
+    return agentAPRegEx.MatchString(ap.Name)
 }

@@ -26,8 +26,9 @@ type CmdConfig struct {
     MQTTPass string `json:"mqtt_pass"`
 }
 
-func NewApCmd(apName, apPass string) *CmdConfig {
-    return &CmdConfig{Cmd: "setAp"}
+// NewConfigCmd returns configuration command.
+func NewConfigCmd() *CmdConfig {
+    return &CmdConfig{Cmd: "cfg"}
 }
 
 func (c *CmdConfig) GetCommand() []byte {

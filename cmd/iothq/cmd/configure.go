@@ -3,6 +3,7 @@ package cmd
 import (
     "github.com/spf13/cobra"
     "github.com/pkg/errors"
+    "github.com/rzajac/iotdet/pkg/hq"
 )
 
 var configureCmd = &cobra.Command{
@@ -14,9 +15,13 @@ var configureCmd = &cobra.Command{
             return errors.New("missing access point name argument")
         }
 
-        //apName := args[0]
+        ap := hq.NewAgentAP(args[0])
+        itf, err := hq.GetInterface(cfg)
+        if err != nil {
+            return err
+        }
 
-        return nil
+        return itf.Configure(ap)
     },
 }
 

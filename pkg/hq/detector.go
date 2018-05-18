@@ -27,7 +27,7 @@ type Detector struct {
 
 // NewDetector returns new Detector instance.
 func NewDetector(cfg *Config) (*Detector, error) {
-    itf, err := GetInterface(cfg.DetItfName, cfg.Log)
+    itf, err := GetInterface(cfg)
     if err != nil {
         return nil, err
     }

@@ -43,3 +43,17 @@ type Config struct {
     Log      *logrus.Entry
     LogLevel int
 }
+
+// GetConfigCmd returns configuration command.
+func (c *Config) GetConfigCmd() *CmdConfig {
+    cmd := NewConfigCmd()
+
+    cmd.ApName = c.HQApName
+    cmd.ApPass = c.HQApPass
+    cmd.MQTTIP = c.MQTTIP
+    cmd.MQTTPort = c.MQTTPort
+    cmd.MQTTUser = c.MQTTUser
+    cmd.MQTTPass = c.MQTTPass
+
+    return cmd
+}

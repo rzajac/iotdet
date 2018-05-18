@@ -26,7 +26,6 @@ import (
 // Agent represents an agent.
 type Agent struct {
     Name    string // The agent's name.
-    Mac     string // The agent's MAC address.
     IP      string // The agent's IP address.
     CmdPort int    // The agent's command server port.
 
@@ -34,10 +33,9 @@ type Agent struct {
 }
 
 // NewAgent returns new instance of Agent.
-func NewAgent(name, mac, ip string, cfg *Config) *Agent {
+func NewAgent(name, ip string, cfg *Config) *Agent {
     return &Agent{
         Name: name,
-        Mac:  mac,
         IP:   ip,
         cfg:  cfg,
     }

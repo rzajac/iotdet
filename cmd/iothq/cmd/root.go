@@ -17,6 +17,9 @@ import (
 // cfgFile holds path to the configuration file.
 var cfgFile string
 
+// cfg represents global configuration.
+var cfg *hq.Config
+
 func init() {
     cobra.OnInitialize(onInitialize)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
@@ -42,6 +45,11 @@ var rootCmd = &cobra.Command{
     Long:          `IoT HQ.`,
     SilenceUsage:  true,
     SilenceErrors: true,
+    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+        var err error
+        cfg, err = config()
+        return err
+    },
 }
 
 // onInitialize runs before command Execute function is run.
@@ -81,22 +89,22 @@ func getVersion() string {
 
 // config returns validated configuration structure.
 func config() (*hq.Config, error) {
-    cfg := &hq.Config{}
+    c := &hq.Config{}
 
     // New agent detection configuration.
-    cfg.DetItfName = viper.GetString("hq.detect.itf")
-    if cfg.DetItfName == "" {
+    c.DetItfName = viper.GetString("hq.detect.itf")
+    if c.DetItfName == "" {
         return nil, errors.New("you must provide WiFi interface name")
     }
-    cfg.DetApPass = viper.GetString("hq.detect.ap_pass")
-    cfg.DetAgentIP = viper.GetString("hq.detect.agent_ip")
-    cfg.DetUseIP = viper.GetString("hq.detect.use_ip")
-    cfg.DetCmdPort = viper.GetInt("hq.detect.cmd_port")
-    cfg.DetInterval = viper.GetDuration("hq.detect.scan_interval") * time.Second
+    c.DetApPass = viper.GetString("hq.detect.ap_pass")
+    c.DetAgentIP = viper.GetString("hq.detect.agent_ip")
+    c.DetUseIP = viper.GetString("hq.detect.use_ip")
+    c.DetCmdPort = viper.GetInt("hq.detect.cmd_port")
+    c.DetInterval = viper.GetDuration("hq.detect.scan_interval") * time.Second
 
     // Cipher configuration.
-    cn := viper.GetString("hq.cipher")
-    switch cn {
+    ci := viper.GetString("hq.cipher")
+    switch ci {
     case hq.CIPHER_AES:
         key, err := hex.DecodeString(viper.GetString("hq.cipher_aes.key"))
         if err != nil {
@@ -107,27 +115,27 @@ func config() (*hq.Config, error) {
         if err != nil {
             return nil, errors.New("invalid AES vi value")
         }
-        cfg.Cipher = hq.NewCipherAES(key, vi)
+        c.Cipher = hq.NewCipherAES(key, vi)
 
     case hq.CIPHER_NONE:
-        cfg.Cipher = hq.NewNoopCipher()
+        c.Cipher = hq.NewNoopCipher()
 
     default:
-        return nil, errors.Errorf("invalid cipher name %s", cn)
+        return nil, errors.Errorf("invalid cipher name %s", ci)
     }
 
     // HQ access point configuration.
-    cfg.HQApName = viper.GetString("hq.access_point.name")
-    cfg.HQApPass = viper.GetString("hq.access_point.pass")
+    c.HQApName = viper.GetString("hq.access_point.name")
+    c.HQApPass = viper.GetString("hq.access_point.pass")
 
     // MQTT configuration.
-    cfg.MQTTIP = viper.GetString("hq.mqtt.ip")
-    cfg.MQTTPort = viper.GetInt("hq.mqtt.port")
-    cfg.MQTTUser = viper.GetString("hq.mqtt.user")
-    cfg.MQTTPass = viper.GetString("hq.mqtt.pass")
+    c.MQTTIP = viper.GetString("hq.mqtt.ip")
+    c.MQTTPort = viper.GetInt("hq.mqtt.port")
+    c.MQTTUser = viper.GetString("hq.mqtt.user")
+    c.MQTTPass = viper.GetString("hq.mqtt.pass")
 
     // Setup logger.
-    cfg.Log = logrus.WithFields(logrus.Fields{"service": "hq"})
+    c.Log = logrus.WithFields(logrus.Fields{"service": "hq"})
 
-    return cfg, nil
+    return c, nil
 }

@@ -19,7 +19,6 @@ import (
     "net"
     "time"
     "sync"
-    "github.com/sirupsen/logrus"
     "os/exec"
     "strconv"
     "os"
@@ -43,14 +42,14 @@ func init() {
 }
 
 // GetInterface returns WiFi interface or error if it does not exist.
-func GetInterface(name string, log *logrus.Entry) (*WiFiItf, error) {
-    if itf, ok := interfaces[name]; ok {
+func GetInterface(cfg *Config) (*WiFiItf, error) {
+    if itf, ok := interfaces[cfg.DetItfName]; ok {
         return itf, nil
     }
 
     // Check if given interface name exists on the system.
-    if !dirExists("/sys/class/net/" + name + "/wireless") {
-        return nil, errors.Errorf("wifi interface %s not found", name)
+    if !dirExists("/sys/class/net/" + cfg.DetItfName + "/wireless") {
+        return nil, errors.Errorf("wifi interface %s not found", cfg.DetItfName)
     }
 
     var err error
@@ -60,25 +59,25 @@ func GetInterface(name string, log *logrus.Entry) (*WiFiItf, error) {
     }
 
     for _, itf := range itf {
-        if itf.Name == name {
-            interfaces[name] = &WiFiItf{
+        if itf.Name == cfg.DetItfName {
+            interfaces[cfg.DetItfName] = &WiFiItf{
                 Mutex:  &sync.Mutex{},
                 itf:    itf,
-                log:    log,
+                cfg:    cfg,
                 discCh: make(stopChanel),
             }
-            return interfaces[name], nil
+            return interfaces[cfg.DetItfName], nil
         }
     }
 
-    return nil, errors.Errorf("wifi interface %s not found", name)
+    return nil, errors.Errorf("wifi interface %s not found", cfg.DetItfName)
 }
 
 // WiFiItf represents WiFi interface.
 type WiFiItf struct {
     *sync.Mutex
     itf    net.Interface
-    log    *logrus.Entry
+    cfg    *Config
     discCh stopChanel
 }
 
@@ -110,11 +109,8 @@ func (w *WiFiItf) Scan() ([]*AgentAP, error) {
         if i+1 > lineCount-1 {
             break
         }
-
-        mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
         name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
-
-        ap := NewAgentAP(name, mac)
+        ap := NewAgentAP(name)
         if ap.IsIotAp() {
             aps = append(aps, ap)
         }
@@ -124,35 +120,35 @@ func (w *WiFiItf) Scan() ([]*AgentAP, error) {
 }
 
 // Configure configures IoT devices.
-func (w *WiFiItf) Configure(ap *AgentAP, cfg *Config) error {
+func (w *WiFiItf) Configure(ap *AgentAP) error {
     w.Lock()
     defer w.Unlock()
 
-    if err := w.connect(ap.Name, cfg.DetApPass); err != nil {
-        w.log.Error(err)
+    if err := w.connect(ap.Name, w.cfg.DetApPass); err != nil {
+        w.cfg.Log.Error(err)
     }
 
-    if err := w.setIP(cfg.DetUseIP); err != nil {
+    if err := w.setIP(w.cfg.DetUseIP); err != nil {
         return err
     }
 
-    if err := w.ping(cfg.DetAgentIP); err != nil {
+    if err := w.ping(w.cfg.DetAgentIP); err != nil {
         return err
     }
 
-    _ = NewAgent(ap.Name, ap.Bssid, cfg.DetAgentIP, cfg)
-    //if _, err := agent.SendCmd(newApCmd(name, pass)); err != nil {
-    //    w.log.Error(err)
-    //}
-    //
-    //ap.Disconnect()
+    a := NewAgent(ap.Name, w.cfg.DetAgentIP, w.cfg)
+    if _, err := a.SendCmd(w.cfg.GetConfigCmd()); err != nil {
+       w.cfg.Log.Error(err)
+    }
+
+    w.disconnect()
 
     return nil
 }
 
 // setIP sets IP on the interface.
 func (w *WiFiItf) setIP(ip string) error {
-    w.log.Debugf("setting %s IP to %s", w.itf.Name, ip)
+    w.cfg.Log.Debugf("setting %s IP to %s", w.itf.Name, ip)
     err := exec.Command("ifconfig", w.itf.Name, ip, "netmask", "255.255.255.0").Run()
     if err != nil {
         if _, ok := err.(*exec.ExitError); ok {
@@ -165,7 +161,7 @@ func (w *WiFiItf) setIP(ip string) error {
 
 // ping pings IP address and returns error if IP cannot be pinged.
 func (w *WiFiItf) ping(ip string) error {
-    w.log.Debugf("pinging device at %s", ip)
+    w.cfg.Log.Debugf("pinging device at %s", ip)
     err := exec.Command("ping", "-I", w.itf.Name, "-c1", "-W", "1", ip).Run()
     if err != nil {
         if _, ok := err.(*exec.ExitError); ok {
@@ -178,7 +174,7 @@ func (w *WiFiItf) ping(ip string) error {
 
 // connect connects to access point.
 func (w *WiFiItf) connect(apName, apPass string) error {
-    w.log.Debugf("killing wpa_supplicant for %s interface.", w.itf.Name)
+    w.cfg.Log.Debugf("killing wpa_supplicant for %s interface.", w.itf.Name)
     exec.Command("bash", "-c", "wpa_cli -i "+w.itf.Name+" terminate").Run()
     if err := w.wpaConfigWrite(apName, apPass); err != nil {
         return err
@@ -201,10 +197,10 @@ func (w *WiFiItf) connect(apName, apPass string) error {
         }
     }()
 
-    w.log.Debugf("connecting to %s with %s", apName, w.itf.Name)
+    w.cfg.Log.Debugf("connecting to %s with %s", apName, w.itf.Name)
     select {
     case <-wpaConnCh:
-        w.log.Info("connected to %s with %s", apName, w.itf.Name)
+        w.cfg.Log.Info("connected to %s with %s", apName, w.itf.Name)
         break
     case <-time.After(10 * time.Second):
         w.discCh <- struct{}{}
@@ -219,7 +215,7 @@ func (w *WiFiItf) connect(apName, apPass string) error {
 func (w *WiFiItf) disconnect() {
     select {
     case w.discCh <- struct{}{}:
-        w.log.Debugf("disconnecting %s", w.itf.Name)
+        w.cfg.Log.Debugf("disconnecting %s", w.itf.Name)
         <-w.discCh
     default:
         return
@@ -255,7 +251,7 @@ func (w *WiFiItf) makeSureIsUp() error {
     if w.isUp() {
         return nil
     }
-    w.log.Debugf("waiting for %s to became available", w.itf.Name)
+    w.cfg.Log.Debugf("waiting for %s to became available", w.itf.Name)
     if err := w.up(); err != nil {
         return err
     }
@@ -268,14 +264,14 @@ func (w *WiFiItf) makeSureIsUp() error {
         return errors.Errorf("could not bring up %s", w.itf.Name)
     }
 
-    w.log.Debugf("% is up", w.itf.Name)
+    w.cfg.Log.Debugf("% is up", w.itf.Name)
 
     return nil
 }
 
 // wpaConfigWrite writes wpa_supplicant configuration file.
 func (w *WiFiItf) wpaConfigWrite(apName string, apPass string) error {
-    w.log.Debug("writing wpa_supplicant daemon config to %s", w.wpaConfigPath())
+    w.cfg.Log.Debug("writing wpa_supplicant daemon config to %s", w.wpaConfigPath())
 
     text := ""
     text += "ctrl_interface=/var/run/wpa_supplicant." + strconv.Itoa(os.Getpid()) + "\n"
@@ -294,7 +290,7 @@ func (w *WiFiItf) wpaConfigPath() string {
 
 // startWpaDaemon starts wpa_supplicant daemon.
 func (w *WiFiItf) wpaStartDaemon() (connChanel, stopChanel, error) {
-    w.log.Debug("starting wpa_supplicant daemon")
+    w.cfg.Log.Debug("starting wpa_supplicant daemon")
 
     // wpa_supplicant -i wlan0 -D nl80211 -c /tmp/iot_wpa_supplicant.123.conf
     itf := "-i" + w.itf.Name
@@ -327,15 +323,15 @@ func (w *WiFiItf) wpaStartDaemon() (connChanel, stopChanel, error) {
         for {
             select {
             case t := <-stdoutCh:
-                w.log.Debugf("WPA: %s", t)
+                w.cfg.Log.Debugf("WPA: %s", t)
                 if strings.Contains(t, "CTRL-EVENT-CONNECTED") {
                     connCh <- struct{}{}
                 }
             case <-stopCh:
-                w.log.Debugf("killing PID %d.", cmd.Process.Pid)
+                w.cfg.Log.Debugf("killing PID %d.", cmd.Process.Pid)
                 cmd.Process.Kill()
                 path := w.wpaConfigPath()
-                w.log.Debugf("removing wpa_supplicant daemon config file %s", path)
+                w.cfg.Log.Debugf("removing wpa_supplicant daemon config file %s", path)
                 os.Remove(path)
                 stopCh <- struct{}{}
                 return
@@ -348,7 +344,7 @@ func (w *WiFiItf) wpaStartDaemon() (connChanel, stopChanel, error) {
 
 // wpaKillDaemon kills wpa_supplicant daemon.
 func (w *WiFiItf) wpaKillDaemon() error {
-    w.log.Debug("killing wpa_supplicant for %s interface", w.itf.Name)
+    w.cfg.Log.Debug("killing wpa_supplicant for %s interface", w.itf.Name)
     exec.Command("bash", "-c", "wpa_cli -i "+w.itf.Name+" terminate").Run()
 
     return nil
