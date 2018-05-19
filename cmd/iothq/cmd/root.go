@@ -1,7 +1,6 @@
 package cmd
 
 import (
-    "github.com/sirupsen/logrus"
     "github.com/spf13/viper"
     "strings"
     "github.com/spf13/cobra"
@@ -12,27 +11,26 @@ import (
     "github.com/pkg/errors"
     "github.com/rzajac/iotdet/pkg/hq"
     "time"
+    "regexp"
+    "fmt"
 )
 
 // cfgFile holds path to the configuration file.
 var cfgFile string
 
-// cfg represents global configuration.
-var cfg *hq.HQ
-
 func init() {
     cobra.OnInitialize(onInitialize)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
-    rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
-    rootCmd.PersistentFlags().BoolP("version", "v", false, "version")
-    rootCmd.PersistentFlags().BoolP("debug", "d", false, "run nin debug mode")
-    viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+    rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
+    rootCmd.Flags().BoolP("version", "v", false, "version")
+    rootCmd.Flags().BoolP("debug", "d", false, "run in debug mode")
+    viper.BindPFlag("debug", rootCmd.Flags().Lookup("debug"))
 }
 
 // Execute executes root command.
 func Execute() {
     if err := rootCmd.Execute(); err != nil {
-        logrus.WithFields(logrus.Fields{"service": "hq"}).Error(err)
+        fmt.Fprintf(os.Stderr, "%s\n", err.Error())
         os.Exit(1)
     }
 }
@@ -45,11 +43,6 @@ var rootCmd = &cobra.Command{
     Long:          `IoT HQ.`,
     SilenceUsage:  true,
     SilenceErrors: true,
-    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-        var err error
-        cfg, err = config()
-        return err
-    },
 }
 
 // onInitialize runs before command Execute function is run.
@@ -88,21 +81,37 @@ func getVersion() string {
 }
 
 // config returns validated configuration structure.
-func config() (*hq.HQ, error) {
-    c := &hq.HQ{}
+func getHQ() (*hq.HQ, error) {
+    c := hq.NewHQ()
 
-    // New agent detection configuration.
-    c.DetItfName = viper.GetString("hq.detect.itf")
-    if c.DetItfName == "" {
-        return nil, errors.New("you must provide WiFi interface name")
+    // configure new agent detection.
+    detItfName := viper.GetString("hq.detect.itf")
+    detApNamePat := regexp.MustCompile(viper.GetString("hq.detect.agent_ap_name"))
+    detApPass := viper.GetString("hq.detect.ap_pass")
+    if err := c.SetDet(detItfName, detApNamePat, detApPass); err != nil {
+        return nil, err
     }
-    c.DetApPass = viper.GetString("hq.detect.ap_pass")
-    c.DetAgentIP = viper.GetString("hq.detect.agent_ip")
-    c.DetUseIP = viper.GetString("hq.detect.use_ip")
-    c.DetCmdPort = viper.GetInt("hq.detect.cmd_port")
-    c.DetInterval = viper.GetDuration("hq.detect.scan_interval") * time.Second
 
-    // Cipher configuration.
+    // Set IPs to use during the detection stage.
+    detAgentIP := viper.GetString("hq.detect.agent_ip")
+    detUseIP := viper.GetString("hq.detect.use_ip")
+    if err := c.SetDetIPs(detUseIP, detAgentIP); err != nil {
+        return nil, err
+    }
+
+    // Set TCP port agents use for command server.
+    detCmdPort := viper.GetInt("hq.detect.cmd_port")
+    if err := c.SetDetCmdPort(detCmdPort); err != nil {
+        return nil, err
+    }
+
+    // Set detection interval.
+    detInterval := viper.GetDuration("hq.detect.scan_interval") * time.Second
+    if err := c.SetDetInterval(detInterval); err != nil {
+        return nil, err
+    }
+
+    // Set cipher configuration for agents communication.
     ci := viper.GetString("hq.cipher")
     switch ci {
     case hq.CIPHER_AES:
@@ -115,27 +124,41 @@ func config() (*hq.HQ, error) {
         if err != nil {
             return nil, errors.New("invalid AES vi value")
         }
-        c.Cipher = hq.NewCipherAES(key, vi)
+
+        c.SetCipher(hq.NewCipherAES(key, vi))
 
     case hq.CIPHER_NONE:
-        c.Cipher = hq.NewNoopCipher()
+        c.SetCipher(hq.NewNoopCipher())
 
     default:
         return nil, errors.Errorf("invalid cipher name %s", ci)
     }
 
-    // HQ access point configuration.
-    c.HQApName = viper.GetString("hq.access_point.name")
-    c.HQApPass = viper.GetString("hq.access_point.pass")
+    // Set main access point configuration.
+    apName := viper.GetString("hq.access_point.name")
+    apPass := viper.GetString("hq.access_point.pass")
+    if err := c.SetAccessPoint(apName, apPass); err != nil {
+        return nil, err
+    }
 
-    // MQTT configuration.
-    c.MQTTIP = viper.GetString("hq.mqtt.ip")
-    c.MQTTPort = viper.GetInt("hq.mqtt.port")
-    c.MQTTUser = viper.GetString("hq.mqtt.user")
-    c.MQTTPass = viper.GetString("hq.mqtt.pass")
+    // Set MQTT configuration.
+    clientID := viper.GetString("hq.mqtt.client_id")
+    mqttIP := viper.GetString("hq.mqtt.ip")
+    mqttPort := viper.GetInt("hq.mqtt.port")
+    mqttUser := viper.GetString("hq.mqtt.user")
+    mqttPass := viper.GetString("hq.mqtt.pass")
+
+    mqttCfg, err := hq.NewMQTTConfig(clientID, mqttIP, mqttPort, mqttUser, mqttPass)
+    if err != nil {
+        return nil, err
+    }
+
+    c.SetMQTTConfig(mqttCfg)
 
     // Setup logger.
-    c.Log = logrus.WithFields(logrus.Fields{"service": "hq"})
+    if viper.GetBool("debug") {
+        c.SetLogger(hq.NewLog().DebugOn())
+    }
 
     return c, nil
 }

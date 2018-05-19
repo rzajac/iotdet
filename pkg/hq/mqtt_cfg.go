@@ -14,24 +14,27 @@
 
 package hq
 
-import (
-    "fmt"
-    "time"
-    "github.com/eclipse/paho.mqtt.golang"
-)
+// Represents MQTT broker configuration.
+type MQTTConfig struct {
+    // MQTT client ID.
+    clientID string
+    // MQTT broker IP.
+    ip string
+    // MQTT broker port.
+    port int
+    // MQTT broker username.
+    user string
+    // MQTT broker password.
+    pass string
+}
 
-func NewMQTTClient(cfg *HQ) (mqtt.Client, error) {
-    opts := mqtt.NewClientOptions()
-    opts.AddBroker(fmt.Sprintf("tcp://%s:%d", cfg.MQTTIP, cfg.MQTTPort))
-    opts.SetClientID("iothq")
-    opts.SetKeepAlive(2 * time.Second)
-    opts.SetPingTimeout(1 * time.Second)
-    opts.SetUsername(cfg.MQTTUser)
-    opts.SetPassword(cfg.MQTTPass)
-
-    c := mqtt.NewClient(opts)
-    if token := c.Connect(); token.Wait() && token.Error() != nil {
-        return nil, token.Error()
-    }
-    return c, nil
+// NewMQTTConfig returns new MQTT broker configuration struct.
+func NewMQTTConfig(clientID, ip string, port int, user, pass string) (MQTTConfig, error) {
+    return MQTTConfig{
+        clientID: clientID,
+        ip:       ip,
+        port:     port,
+        user:     user,
+        pass:     pass,
+    }, nil
 }

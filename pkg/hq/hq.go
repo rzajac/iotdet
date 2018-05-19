@@ -16,101 +16,184 @@ package hq
 
 import (
     "time"
+    "github.com/pkg/errors"
+    "regexp"
+    "github.com/eclipse/paho.mqtt.golang"
+    "fmt"
 )
 
 // HQ represents HQ configuration.
 type HQ struct {
-    DetItfName  string        // The interface name to use for new agents detection.
-    DetApPass   string        // The password for agent's access point.
-    DetAgentIP  string        // The IP agent assigns to itself when creating access point.
-    DetUseIP    string        // The IP to use after connecting to agent's access point.
-    DetCmdPort  int           // The TCP port agents listen on for configuration commands.
-    DetInterval time.Duration // The interval for scanning for new agents.
-
-    Cipher Cipher // The cipher to use for communication with agent devices.
-
-    HQApName string // The HQ access point name agents use to communicate.
-    HQApPass string // The HQ access point password.
-
-    // MQTT broker configuration.
-    MQTTIP   string
-    MQTTPort int
-    MQTTUser string
-    MQTTPass string
-
+    // The interface name to use for new agents detection.
+    detItfName string
+    // The WiFi interface used for new agent detection.
+    detItf *wifiItf
+    // The regexp used to recognize agent's access point names.
+    detApNamePat *regexp.Regexp
+    // The password for agent's access point.
+    detApPass string
+    // The IP agent assigns to itself when creating access point.
+    detAgentIP string
+    // The IP to use after connecting to agent's access point.
+    detUseIP string
+    // The TCP port agents listen on for configuration commands.
+    detCmdPort int
+    // The interval for scanning for new agents.
+    detInterval time.Duration
+    // The cipher to use for communication with agent devices.
+    cipher Cipher
+    // The access point name agents use to communicate.
+    mainApName string
+    // The access point password.
+    mainApPass string
     // Logger configuration.
-    Log Logger
+    log Logger
+    // The MQTT configuration.
+    mqttCfg MQTTConfig
+    // The MQTT client.
+    mqttClient mqtt.Client
 }
 
 // NewHQ returns new instance of HQ with some default values for fields.
 func NewHQ() *HQ {
     return &HQ{
-        DetAgentIP:  "192.168.42.1",
-        DetUseIP:    "192.168.42.2",
-        DetCmdPort:  7802,
-        DetInterval: 5 * time.Second,
-        Cipher:      NewNoopCipher(),
-        Log:         NewLog(),
+        detAgentIP:  "192.168.42.1",
+        detUseIP:    "192.168.42.2",
+        detCmdPort:  7802,
+        detInterval: 5 * time.Second,
+        cipher:      NewNoopCipher(),
+        log:         NewLog(),
     }
 }
 
-// SetDetPass set wifi interface name and access point password to use for
-// detecting new agents.
-func (hq *HQ) SetDetPass(itfName, apPass string) {
-    hq.DetItfName = itfName
-    hq.DetApPass = apPass
+// SetDet set WiFi interface name, agent's access point name regexp and password
+// to use for detecting new agents.
+func (hq *HQ) SetDet(itfName string, apNamePat *regexp.Regexp, apPass string) error {
+    if itfName == "" {
+        return errors.New("you must provide WiFi interface name")
+    }
+    hq.detItfName = itfName
 
+    var err error
+    hq.detItf, err = getInterface(hq.detItfName)
+    if err != nil {
+        return err
+    }
+
+    hq.detApNamePat = apNamePat
+    hq.detApPass = apPass
+    return nil
 }
 
-// SetDetPass set IP to use for WiFi interface after connecting to agent's
+// SetDetIP set IP to use for WiFi interface after connecting to agent's
 // access point (agents do not provide DHCP) and agent's IP.
-func (hq *HQ) SetDetIPs(useIP, agentIP string) {
-    hq.DetUseIP = useIP
-    hq.DetAgentIP = agentIP
+func (hq *HQ) SetDetIPs(useIP, agentIP string) error {
+    hq.detUseIP = useIP
+    hq.detAgentIP = agentIP
+    return nil
 }
 
 // SetDetCmdPort set TCP port to use for communication with agent.
 // Every agent creates TC/IP command server during discovery phase to receive
 // configuration for HQ access point and MQTT server.
-func (hq *HQ) SetDetCmdPort(cmdPort int) {
-    hq.DetCmdPort = cmdPort
+func (hq *HQ) SetDetCmdPort(cmdPort int) error {
+    hq.detCmdPort = cmdPort
+    return nil
 }
 
 // SetDetInterval sets interval used for agent discovery retries.
-func (hq *HQ) SetDetInterval(interval time.Duration) {
-    hq.DetInterval = interval
+func (hq *HQ) SetDetInterval(interval time.Duration) error {
+    hq.detInterval = interval
+    return nil
 }
 
 // SetCipher sets a cipher to use to encrypt and decrypt communication with agents.
 func (hq *HQ) SetCipher(c Cipher) {
-    hq.Cipher = c
+    hq.cipher = c
 }
 
-// SetHQAccessPoint sets HQ access point credentials which will be sent to
+// SetAccessPoint sets HQ access point credentials which will be sent to
 // new agent during discovery phase.
-func (hq *HQ) SetHQAccessPoint(apName, apPass string) {
-    hq.HQApName = apName
-    hq.HQApPass = apPass
+func (hq *HQ) SetAccessPoint(apName, apPass string) error {
+    hq.mainApName = apName
+    hq.mainApPass = apPass
+    return nil
 }
 
 // SetMQTTBroker configures MQTT broker.
-func (hq *HQ) SetMQTTBroker(ip string, port int, user, pass string) {
-    hq.MQTTIP = ip
-    hq.MQTTPort = port
-    hq.MQTTUser = user
-    hq.MQTTPass = pass
+func (hq *HQ) SetMQTTClient(client mqtt.Client) error {
+    hq.mqttClient = client
+    return nil
+}
+
+// SetLogger set logger to use.
+func (hq *HQ) SetLogger(l Logger) {
+    hq.log = l
+}
+
+// Detect detects IoT access points in range.
+func (hq *HQ) DetectAgents() ([]*AgentAP, error) {
+    hq.log.Infof("scanning for new agents using %s interface...", hq.detItfName)
+    aps, err := hq.detItf.scan()
+    if err != nil {
+        return nil, err
+    }
+
+    // Filter out non agent access points.
+    //var agents []*AgentAP
+    //for _, ap := range aps {
+    //    if hq.detApNamePat.MatchString(ap.Name) {
+    //        agents = append(agents, ap)
+    //    }
+    //}
+    //return agents, nil
+    return aps, nil
+}
+
+// SetMQTTConfig sets MQTT broker configuration.
+func (hq *HQ) SetMQTTConfig(cfg MQTTConfig) error {
+    opts := mqtt.NewClientOptions()
+    opts.AddBroker(fmt.Sprintf("tcp://%s:%d", cfg.ip, cfg.port))
+    opts.SetClientID(cfg.clientID)
+    opts.SetKeepAlive(2 * time.Second)
+    opts.SetPingTimeout(1 * time.Second)
+    opts.SetUsername(cfg.user)
+    opts.SetPassword(cfg.pass)
+
+    client := mqtt.NewClient(opts)
+    if token := client.Connect(); token.Wait() && token.Error() != nil {
+        return token.Error()
+    }
+
+    hq.mqttCfg = cfg
+    hq.mqttClient = client
+    return nil
+}
+
+// PublishMQTT publishes payload to MQTT broker.
+func (hq *HQ) PublishMQTT(topic string, qos byte, retained bool, payload interface{}) error {
+    hq.mqttClient.Publish(topic, qos, retained, payload).Wait()
+    return nil
 }
 
 // GetConfigCmd returns configuration command.
 func (hq *HQ) GetConfigCmd() *CmdConfig {
     cmd := NewConfigCmd()
 
-    cmd.ApName = hq.HQApName
-    cmd.ApPass = hq.HQApPass
-    cmd.MQTTIP = hq.MQTTIP
-    cmd.MQTTPort = hq.MQTTPort
-    cmd.MQTTUser = hq.MQTTUser
-    cmd.MQTTPass = hq.MQTTPass
+    cmd.ApName = hq.mainApName
+    cmd.ApPass = hq.mainApPass
+
+    if hq.isMQTTSet() {
+        cmd.MQTTIP = hq.mqttCfg.ip
+        cmd.MQTTPort = hq.mqttCfg.port
+        cmd.MQTTUser = hq.mqttCfg.user
+        cmd.MQTTPass = hq.mqttCfg.pass
+    }
 
     return cmd
+}
+
+// isMQTTSet returns true if MQTT configuration has been set.
+func (hq *HQ) isMQTTSet() bool {
+    return hq.mqttCfg.ip != "" && hq.mqttCfg.port != 0
 }

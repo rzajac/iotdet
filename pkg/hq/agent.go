@@ -47,7 +47,7 @@ func (a *Agent) SendCmd(cmd MarshalCmd) ([]byte, error) {
     if err != nil {
         return nil, err
     }
-    a.cfg.Log.Debugf("sending to %s command: %s", a.Name, string(c))
+    a.cfg.log.Debugf("sending to %s command: %s", a.Name, string(c))
 
     return a.SendMsg(c)
 }
@@ -65,7 +65,7 @@ func (a *Agent) SendMsg(msg []byte) ([]byte, error) {
     defer conn.Close()
     conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 
-    msg, err = a.cfg.Cipher.Encrypt(msg)
+    msg, err = a.cfg.cipher.Encrypt(msg)
     if err != nil {
         return resp, err
     }
@@ -83,12 +83,12 @@ func (a *Agent) SendMsg(msg []byte) ([]byte, error) {
     }
 
     // Decrypt the response.
-    resp, err = a.cfg.Cipher.Decrypt(buff.Bytes())
+    resp, err = a.cfg.cipher.Decrypt(buff.Bytes())
     if err != nil {
         return resp, err
     }
 
-    a.cfg.Log.Debugf("agent responded with: %s", string(resp))
+    a.cfg.log.Debugf("agent responded with: %s", string(resp))
 
     return resp, err
 }
@@ -100,7 +100,7 @@ func (a *Agent) connect() (net.Conn, error) {
 
     // Build TCP server address.
     address := a.IP + ":" + strconv.Itoa(a.CmdPort)
-    a.cfg.Log.Debugf("dialing agent %s" + address)
+    a.cfg.log.Debugf("dialing agent %s" + address)
 
     // connect to TCP server.
     if conn, err = net.Dial("tcp", address); err != nil {

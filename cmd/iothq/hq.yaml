@@ -4,11 +4,13 @@ hq:
 
   detect:
     # The wireless interface name to listen for new agents on.
-    itf: wlp3s0
+    itf: wlx000f55a93e30
     # The password for agent's access point.
     ap_pass: password
     # The IP agent assigns to itself when creating access point.
     agent_ip: 192.168.42.1
+    # The regexp matching agent's detection access point names.
+    agent_ap_name: AGENT_([[:xdigit:]]{2}){6}
     # The IP to use after connecting to agent's access point.
     use_ip: 192.168.42.2
     # The TCP port agents listen on for configuration commands.
@@ -22,11 +24,12 @@ hq:
     # The HQ access point password.
     pass: password
 
-  mqtt:
-    ip: 127.0.0.1
-    port: 1883
-    user: agent
-    pass: test
+#  mqtt:
+#    client_id: hq
+#    ip: 127.0.0.1
+#    port: 1883
+#    user: agent
+#    pass: test
 
   cipher_aes:
     # The AES cipher configuration shared between IoT devices and
