@@ -3,7 +3,6 @@ package cmd
 import (
     "github.com/spf13/cobra"
     "fmt"
-    "os"
 )
 
 var detectCmd = &cobra.Command{
@@ -16,21 +15,13 @@ var detectCmd = &cobra.Command{
             return err
         }
 
-        aps, err := h.DetectAgents()
+        agents, err := h.DetectAgents()
         if err != nil {
             return err
         }
 
-        // Nothing found.
-        if len(aps) == 0 {
-            return nil
-        }
-
-        for _, ap := range aps {
-            fmt.Printf("found new agent: %s\n", ap.Name)
-            if err := h.PublishMQTT("hq/new_agent", 0, false, ap.MAC()); err != nil {
-               fmt.Fprint(os.Stderr, err)
-            }
+        for _, agent := range agents {
+            fmt.Printf("found new agent: %s (%s)\n", agent.Name, agent.MAC())
         }
 
         return nil

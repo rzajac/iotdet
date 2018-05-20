@@ -146,6 +146,15 @@ func (hq *HQ) DetectAgents() ([]*AgentAP, error) {
             agents = append(agents, ap)
         }
     }
+
+    if hq.isMQTTSet() {
+        for _, agent := range agents {
+            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.MAC()); err != nil {
+                return agents, err
+            }
+        }
+    }
+
     return agents, nil
 }
 
