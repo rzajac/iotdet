@@ -140,14 +140,13 @@ func (hq *HQ) DetectAgents() ([]*AgentAP, error) {
     }
 
     // Filter out non agent access points.
-    //var agents []*AgentAP
-    //for _, ap := range aps {
-    //    if hq.detApNamePat.MatchString(ap.Name) {
-    //        agents = append(agents, ap)
-    //    }
-    //}
-    //return agents, nil
-    return aps, nil
+    var agents []*AgentAP
+    for _, ap := range aps {
+        if hq.detApNamePat.MatchString(ap.Name) {
+            agents = append(agents, ap)
+        }
+    }
+    return agents, nil
 }
 
 // SetMQTTConfig sets MQTT broker configuration.
