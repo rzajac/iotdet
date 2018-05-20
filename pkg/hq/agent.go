@@ -25,47 +25,42 @@ import (
 
 // Agent represents an agent.
 type Agent struct {
-    Name    string // The agent's name.
+    Code    string // The agent's MAC address.
     IP      string // The agent's IP address.
     CmdPort int    // The agent's command server port.
-
-    cfg *HQ
+    cipher  Cipher // The cipher to use for communication with agent devices.
 }
 
 // NewAgent returns new instance of Agent.
-func NewAgent(name, ip string, cfg *HQ) *Agent {
+func NewAgent(name, ip string, port int, cipher Cipher) *Agent {
     return &Agent{
-        Name: name,
-        IP:   ip,
-        cfg:  cfg,
+        Code:    name,
+        IP:      ip,
+        CmdPort: port,
+        cipher:  cipher,
     }
 }
 
 // SendCmd sends command to the agent.
 func (a *Agent) SendCmd(cmd MarshalCmd) ([]byte, error) {
-    c, err := json.Marshal(cmd)
-    if err != nil {
-        return nil, err
-    }
-    a.cfg.log.Debugf("sending to %s command: %s", a.Name, string(c))
-
-    return a.SendMsg(c)
-}
-
-// SendMsg sends message to the agent.
-func (a *Agent) SendMsg(msg []byte) ([]byte, error) {
     var err error
     var resp []byte
     var conn net.Conn
 
-    // connect to TCP server.
+    c, err := json.Marshal(cmd)
+    if err != nil {
+        return nil, err
+    }
+    log.Debugf("sending to %s command: %s", a.Code, string(c))
+
+    // Connect to TCP server.
     if conn, err = a.connect(); err != nil {
         return resp, err
     }
     defer conn.Close()
     conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 
-    msg, err = a.cfg.cipher.Encrypt(msg)
+    msg, err = a.cipher.Encrypt(msg)
     if err != nil {
         return resp, err
     }
@@ -83,12 +78,12 @@ func (a *Agent) SendMsg(msg []byte) ([]byte, error) {
     }
 
     // Decrypt the response.
-    resp, err = a.cfg.cipher.Decrypt(buff.Bytes())
+    resp, err = a.cipher.Decrypt(buff.Bytes())
     if err != nil {
         return resp, err
     }
 
-    a.cfg.log.Debugf("agent responded with: %s", string(resp))
+    log.Debugf("agent responded with: %s", string(resp))
 
     return resp, err
 }
@@ -100,7 +95,7 @@ func (a *Agent) connect() (net.Conn, error) {
 
     // Build TCP server address.
     address := a.IP + ":" + strconv.Itoa(a.CmdPort)
-    a.cfg.log.Debugf("dialing agent %s" + address)
+    log.Debugf("dialing agent %s" + address)
 
     // connect to TCP server.
     if conn, err = net.Dial("tcp", address); err != nil {

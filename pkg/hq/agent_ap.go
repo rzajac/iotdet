@@ -18,17 +18,23 @@ import (
     "strings"
 )
 
-// AgentAP represents access point agent creates during discovery phase.
-type AgentAP struct {
-    Name string // Access point name.
+// agentAP represents access point agent creates during discovery phase.
+type agentAP struct {
+    name  string // Access point name.
+    pass  string // Access point password.
+    ip    string // The IP agent assigns to itself when creating access point.
+    port  int    // The TCP port agents listen on for configuration commands.
+    useIP string // The IP to use after connecting to agent's access point.
 }
 
-// NewAgentAP returns new AgentAP instance.
-func NewAgentAP(name string) *AgentAP {
-    return &AgentAP{Name: name}
+// newAgentAP returns new agentAP instance.
+func newAgentAP(name string) *agentAP {
+    return &agentAP{
+        name: name,
+    }
 }
 
-// MAC returns access point MAC address.
-func (ap *AgentAP) MAC() string {
-    return strings.Split(ap.Name, "_")[1]
+// mac returns access point mac address.
+func (ap *agentAP) mac() string {
+    return strings.Split(ap.name, "_")[1]
 }

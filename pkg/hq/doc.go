@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iotdet detects and configures new IoT devices
-// in reach of specified wifi interface.
+// Package hq manages agent devices.
 package hq

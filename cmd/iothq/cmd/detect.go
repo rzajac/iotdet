@@ -21,7 +21,7 @@ var detectCmd = &cobra.Command{
         }
 
         for _, agent := range agents {
-            fmt.Printf("found new agent: %s\n", agent.MAC())
+            fmt.Printf("found new agent: %s\n", agent.mac())
         }
 
         return nil

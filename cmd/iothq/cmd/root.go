@@ -51,7 +51,7 @@ func onInitialize() {
     viper.SetEnvPrefix("HQ")
     // Replace dot with underscore when looking for environmental variables.
     viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-    // Name of the configuration file and where to look for it.
+    // name of the configuration file and where to look for it.
     viper.SetConfigName("hq")
     viper.AddConfigPath("/usr/etc/hq")
     viper.AddConfigPath(".")
@@ -157,7 +157,9 @@ func getHQ() (*hq.HQ, error) {
 
     // Setup logger.
     if viper.GetBool("debug") {
-        c.SetLogger(hq.NewLog().DebugOn())
+        l := hq.NewDefaultLogger().DebugOn()
+        c.SetLogger(l)
+        hq.SetWiFiLogger(l)
     }
 
     return c, nil

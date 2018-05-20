@@ -35,48 +35,69 @@ type Logger interface {
     Errorf(format string, args ...interface{})
 }
 
-// Log represents a logger.
-type Log struct {
+// The global package logger.
+var log Logger
+
+func init() {
+    log = &dummyLogger{}
+}
+
+// SetLogger set logger to use.
+func SetLogger(l Logger) {
+    log = l
+}
+
+// DefaultLog represents a logger.
+type DefaultLog struct {
     debug bool
 }
 
-// NewLog creates new instance of logger.
-func NewLog() *Log {
-    return &Log{}
+// NewDefaultLogger creates new instance of default logger.
+func NewDefaultLogger() *DefaultLog {
+    return &DefaultLog{}
 }
 
 // DebugOn turns on debug level logging.
-func (l *Log) DebugOn() *Log {
+func (l *DefaultLog) DebugOn() *DefaultLog {
     l.debug = true
     return l
 }
 
-func (l *Log) Debug(args ...interface{}) {
+func (l *DefaultLog) Debug(args ...interface{}) {
     if !l.debug {
         return
     }
     fmt.Fprintf(os.Stdout, "DEBUG: "+fmt.Sprint(args...)+"\n")
 }
 
-func (l *Log) Debugf(format string, args ...interface{}) {
+func (l *DefaultLog) Debugf(format string, args ...interface{}) {
     if !l.debug {
         return
     }
     fmt.Fprintf(os.Stdout, "DEBUG: "+format+"\n", args...)
 }
 
-func (*Log) Info(args ...interface{}) {
+func (*DefaultLog) Info(args ...interface{}) {
     fmt.Fprintf(os.Stdout, "INFO: "+fmt.Sprint(args...)+"\n")
 }
 
-func (*Log) Infof(format string, args ...interface{}) {
+func (*DefaultLog) Infof(format string, args ...interface{}) {
     fmt.Fprintf(os.Stdout, "INFO: "+format+"\n", args...)
 }
 
-func (*Log) Error(args ...interface{}) {
+func (*DefaultLog) Error(args ...interface{}) {
     fmt.Fprintf(os.Stderr, "ERROR: "+fmt.Sprint(args...)+"\n")
 }
 
-func (*Log) Errorf(format string, args ...interface{}) {
+func (*DefaultLog) Errorf(format string, args ...interface{}) {
     fmt.Fprintf(os.Stderr, "ERROR: "+format+"\n", args...)
 }
+
+type dummyLogger struct{}
+
+func (*dummyLogger) Debug(args ...interface{})                 {}
+func (*dummyLogger) Debugf(format string, args ...interface{}) {}
+func (*dummyLogger) Info(args ...interface{})                  {}
+func (*dummyLogger) Infof(format string, args ...interface{})  {}
+func (*dummyLogger) Error(args ...interface{})                 {}
+func (*dummyLogger) Errorf(format string, args ...interface{}) {}

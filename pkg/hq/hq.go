@@ -46,8 +46,6 @@ type HQ struct {
     mainApName string
     // The access point password.
     mainApPass string
-    // Logger configuration.
-    log Logger
     // The MQTT configuration.
     mqttCfg MQTTConfig
     // The MQTT client.
@@ -62,7 +60,6 @@ func NewHQ() *HQ {
         detCmdPort:  7802,
         detInterval: 5 * time.Second,
         cipher:      NewNoopCipher(),
-        log:         NewLog(),
     }
 }
 
@@ -126,36 +123,43 @@ func (hq *HQ) SetMQTTClient(client mqtt.Client) error {
     return nil
 }
 
-// SetLogger set logger to use.
-func (hq *HQ) SetLogger(l Logger) {
-    hq.log = l
-}
-
 // Detect detects IoT access points in range.
-func (hq *HQ) DetectAgents() ([]*AgentAP, error) {
-    hq.log.Infof("scanning for new agents using %s interface...", hq.detItfName)
+func (hq *HQ) DetectAgents() ([]*agentAP, error) {
+    log.Infof("scanning for new agents using %s interface...", hq.detItfName)
     aps, err := hq.detItf.scan()
     if err != nil {
         return nil, err
     }
 
     // Filter out non agent access points.
-    var agents []*AgentAP
+    var agents []*agentAP
     for _, ap := range aps {
-        if hq.detApNamePat.MatchString(ap.Name) {
+        if hq.detApNamePat.MatchString(ap.name) {
             agents = append(agents, ap)
         }
     }
 
     if hq.isMQTTSet() {
         for _, agent := range agents {
-            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.MAC()); err != nil {
+            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.mac()); err != nil {
                 return agents, err
             }
         }
     }
 
     return agents, nil
+}
+
+// Configure configure given agent access point.
+func (hq *HQ) Configure(ap *agentAP) error {
+    ap.pass = hq.detApPass
+    ap.ip = hq.detAgentIP
+    ap.port = hq.detCmdPort
+    ap.useIP = hq.detUseIP
+
+    hq.detItf.sendCmd(ap, hq.getConfigCmd())
+
+    return nil
 }
 
 // SetMQTTConfig sets MQTT broker configuration.
@@ -184,10 +188,9 @@ func (hq *HQ) PublishMQTT(topic string, qos byte, retained bool, payload interfa
     return nil
 }
 
-// GetConfigCmd returns configuration command.
-func (hq *HQ) GetConfigCmd() *CmdConfig {
+// getConfigCmd returns configuration command.
+func (hq *HQ) getConfigCmd() *CmdConfig {
     cmd := NewConfigCmd()
-
     cmd.ApName = hq.mainApName
     cmd.ApPass = hq.mainApPass
 

@@ -14,11 +14,11 @@ var configureCmd = &cobra.Command{
             return errors.New("missing access point name argument")
         }
 
-        //h, err := getHQ()
-        //if err != nil {
-        //    return err
-        //}
-        //
+        h, err := getHQ()
+        if err != nil {
+            return err
+        }
+
         //ap := hq.NewAgentAP(args[0])
         //itf, err := hq.getInterface(cfg)
         //if err != nil {
