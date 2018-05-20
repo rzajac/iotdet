@@ -26,6 +26,9 @@ import (
     "bufio"
     "strings"
     "regexp"
+    "bytes"
+    "io"
+    "fmt"
 )
 
 // nameRegEx is regular expression matching line with access point name
@@ -114,7 +117,7 @@ func (w *wifiItf) scan() ([]*agentAP, error) {
 }
 
 // sendCmd send command to given access point.
-func (w *wifiItf) sendCmd(ap *agentAP, cmd MarshalCmd) error {
+func (w *wifiItf) sendCmd(ap *agentAP, cmd []byte) ([]byte, error) {
     w.Lock()
     defer w.Unlock()
 
@@ -123,21 +126,37 @@ func (w *wifiItf) sendCmd(ap *agentAP, cmd MarshalCmd) error {
     }
 
     if err := w.setIP(ap.useIP); err != nil {
-        return err
+        return nil, err
     }
 
-    if err := w.ping(ap.ip); err != nil {
-        return err
+    // Build TCP server address.
+    address := fmt.Sprintf("%s:%d", ap.ip, ap.port)
+    log.Debugf("dialing agent %s", address)
+
+    // Connect to TCP server.
+    var err error
+    var conn net.Conn
+    if conn, err = net.Dial("tcp", address); err != nil {
+        return nil, err
+    }
+    defer conn.Close()
+    conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+
+    _, err = conn.Write(cmd)
+    if err != nil {
+        return nil, err
     }
 
-    a := NewAgent(ap.name, w.cfg.detAgentIP, w.cfg)
-    if _, err := a.SendCmd(w.cfg.GetConfigCmd()); err != nil {
-        log.Error(err)
+    // Get the response.
+    var buff bytes.Buffer
+    _, err = io.Copy(&buff, conn)
+    if err != nil {
+        return nil, err
     }
 
     w.disconnect()
 
-    return nil
+    return buff.Bytes(), nil
 }
 
 // setIP sets IP on the interface.
@@ -265,7 +284,7 @@ func (w *wifiItf) makeSureIsUp() error {
 
 // wpaConfigWrite writes wpa_supplicant configuration file.
 func (w *wifiItf) wpaConfigWrite(apName string, apPass string) error {
-    log.Debug("writing wpa_supplicant daemon config to %s", w.wpaConfigPath())
+    log.Debugf("writing wpa_supplicant daemon config to %s", w.wpaConfigPath())
 
     text := ""
     text += "ctrl_interface=/var/run/wpa_supplicant." + strconv.Itoa(os.Getpid()) + "\n"

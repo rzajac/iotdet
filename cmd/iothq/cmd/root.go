@@ -21,10 +21,10 @@ var cfgFile string
 func init() {
     cobra.OnInitialize(onInitialize)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
-    rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
-    rootCmd.Flags().BoolP("version", "v", false, "version")
-    rootCmd.Flags().BoolP("debug", "d", false, "run in debug mode")
-    viper.BindPFlag("debug", rootCmd.Flags().Lookup("debug"))
+    rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
+    rootCmd.PersistentFlags().BoolP("version", "v", false, "version")
+    rootCmd.PersistentFlags().BoolP("debug", "d", false, "run in debug mode")
+    viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 }
 
 // Execute executes root command.
@@ -154,12 +154,12 @@ func getHQ() (*hq.HQ, error) {
     }
 
     c.SetMQTTConfig(mqttCfg)
+    log := hq.NewDefaultLogger()
+    hq.SetLogger(log)
 
     // Setup logger.
     if viper.GetBool("debug") {
-        l := hq.NewDefaultLogger().DebugOn()
-        c.SetLogger(l)
-        hq.SetWiFiLogger(l)
+        hq.SetLogger(log.DebugOn())
     }
 
     return c, nil

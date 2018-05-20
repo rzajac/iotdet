@@ -34,7 +34,7 @@ func newAgentAP(name string) *agentAP {
     }
 }
 
-// mac returns access point mac address.
-func (ap *agentAP) mac() string {
+// Mac returns access point mac address.
+func (ap *agentAP) Mac() string {
     return strings.Split(ap.name, "_")[1]
 }

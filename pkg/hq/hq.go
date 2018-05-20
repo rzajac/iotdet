@@ -141,7 +141,7 @@ func (hq *HQ) DetectAgents() ([]*agentAP, error) {
 
     if hq.isMQTTSet() {
         for _, agent := range agents {
-            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.mac()); err != nil {
+            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.Mac()); err != nil {
                 return agents, err
             }
         }
@@ -151,13 +151,20 @@ func (hq *HQ) DetectAgents() ([]*agentAP, error) {
 }
 
 // Configure configure given agent access point.
-func (hq *HQ) Configure(ap *agentAP) error {
+func (hq *HQ) Configure(apName string) error {
+    ap := newAgentAP(apName)
     ap.pass = hq.detApPass
     ap.ip = hq.detAgentIP
     ap.port = hq.detCmdPort
     ap.useIP = hq.detUseIP
 
-    hq.detItf.sendCmd(ap, hq.getConfigCmd())
+    cmd := hq.getConfigCmd().MarshalCmd()
+    resp, err := hq.detItf.sendCmd(ap, cmd)
+    if err != nil {
+        return err
+    }
+
+    log.Infof("agent response: %s", string(resp))
 
     return nil
 }

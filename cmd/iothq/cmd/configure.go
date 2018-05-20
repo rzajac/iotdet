@@ -19,15 +19,7 @@ var configureCmd = &cobra.Command{
             return err
         }
 
-        //ap := hq.NewAgentAP(args[0])
-        //itf, err := hq.getInterface(cfg)
-        //if err != nil {
-        //    return err
-        //}
-        //
-        //return itf.Configure(ap)
-
-        return nil
+        return h.Configure(args[0])
     },
 }
 
