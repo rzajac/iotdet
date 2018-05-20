@@ -24,12 +24,12 @@ hq:
     # The HQ access point password.
     pass: password
 
-#  mqtt:
-#    client_id: hq
-#    ip: 127.0.0.1
-#    port: 1883
-#    user: agent
-#    pass: test
+  mqtt:
+    client_id: hq
+    ip: 127.0.0.1
+    port: 1883
+    user: hq
+    pass: YjkzYmVj
 
   cipher_aes:
     # The AES cipher configuration shared between IoT devices and
