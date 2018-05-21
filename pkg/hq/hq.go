@@ -124,26 +124,18 @@ func (hq *HQ) SetMQTTClient(client mqtt.Client) error {
 }
 
 // Detect detects IoT access points in range.
-func (hq *HQ) DetectAgents() ([]*agentAP, error) {
+func (hq *HQ) DetectAgents() ([]*beacon, error) {
     log.Infof("scanning for new agents using %s interface...", hq.detItfName)
-    aps, err := hq.detItf.scan()
+    apNames, err := hq.detItf.scan()
     if err != nil {
         return nil, err
     }
 
     // Filter out non agent access points.
-    var agents []*agentAP
-    for _, ap := range aps {
-        if hq.detApNamePat.MatchString(ap.name) {
-            agents = append(agents, ap)
-        }
-    }
-
-    if hq.isMQTTSet() {
-        for _, agent := range agents {
-            if err := hq.PublishMQTT("hq/new_agent", 0, false, agent.Mac()); err != nil {
-                return agents, err
-            }
+    var agents []*beacon
+    for _, apName := range apNames {
+        if hq.detApNamePat.MatchString(apName) {
+            agents = append(agents, hq.agentAP(apName))
         }
     }
 
@@ -152,11 +144,7 @@ func (hq *HQ) DetectAgents() ([]*agentAP, error) {
 
 // Configure configure given agent access point.
 func (hq *HQ) Configure(apName string) error {
-    ap := newAgentAP(apName)
-    ap.pass = hq.detApPass
-    ap.ip = hq.detAgentIP
-    ap.port = hq.detCmdPort
-    ap.useIP = hq.detUseIP
+    ap := hq.agentAP(apName)
 
     cmd := hq.getConfigCmd().MarshalCmd()
     resp, err := hq.detItf.sendCmd(ap, cmd)
@@ -196,12 +184,12 @@ func (hq *HQ) PublishMQTT(topic string, qos byte, retained bool, payload interfa
 }
 
 // getConfigCmd returns configuration command.
-func (hq *HQ) getConfigCmd() *CmdConfig {
-    cmd := NewConfigCmd()
+func (hq *HQ) getConfigCmd() *cmdConfig {
+    cmd := newConfigCmd()
     cmd.ApName = hq.mainApName
     cmd.ApPass = hq.mainApPass
 
-    if hq.isMQTTSet() {
+    if hq.IsMQTTSet() {
         cmd.MQTTIP = hq.mqttCfg.ip
         cmd.MQTTPort = hq.mqttCfg.port
         cmd.MQTTUser = hq.mqttCfg.user
@@ -211,7 +199,17 @@ func (hq *HQ) getConfigCmd() *CmdConfig {
     return cmd
 }
 
-// isMQTTSet returns true if MQTT configuration has been set.
-func (hq *HQ) isMQTTSet() bool {
+// IsMQTTSet returns true if MQTT configuration has been set.
+func (hq *HQ) IsMQTTSet() bool {
     return hq.mqttCfg.ip != "" && hq.mqttCfg.port != 0
+}
+
+// beacon is helper method returning configured
+// agent access point with given name.
+func (hq *HQ) agentAP(apName string) *beacon {
+    return newBeacon(apName,
+        hq.detApPass,
+        hq.detAgentIP,
+        hq.detUseIP,
+        hq.detCmdPort)
 }

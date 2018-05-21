@@ -16,26 +16,31 @@ package hq
 
 import "encoding/json"
 
-// CmdConfig represents structure agents
+// cmdConfig represents configuration structure agents
 // expect to receive during detection phase.
-type CmdConfig struct {
+type cmdConfig struct {
+    // The command identifier.
     Cmd      string `json:"cmd"`
-
+    // The access point name the agent should use for communication.
     ApName   string `json:"ap_name"`
+    // The access point password.
     ApPass   string `json:"ap_pass"`
-
+    // The MQTT broker address.
     MQTTIP   string `json:"mqtt_ip"`
+    // The MQTT broker port.
     MQTTPort int    `json:"mqtt_port"`
+    // The MQTT broker username.
     MQTTUser string `json:"mqtt_user"`
+    // The MQTT broker password.
     MQTTPass string `json:"mqtt_pass"`
 }
 
-// NewConfigCmd returns configuration command.
-func NewConfigCmd() *CmdConfig {
-    return &CmdConfig{Cmd: "cfg"}
+// newConfigCmd returns configuration command.
+func newConfigCmd() *cmdConfig {
+    return &cmdConfig{Cmd: "cfg"}
 }
 
-func (c *CmdConfig) MarshalCmd() []byte {
+func (c *cmdConfig) MarshalCmd() []byte {
     cmd, _ := json.Marshal(c)
     return cmd
 }

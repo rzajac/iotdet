@@ -74,3 +74,13 @@ func dirExists(dirPath string) bool {
     }
     return true
 }
+
+// padRight right pads byte array with zeros.
+func padRight(msg []byte, length int) []byte {
+    for {
+        if len(msg) == length {
+            return msg
+        }
+        msg = append(msg, 0)
+    }
+}

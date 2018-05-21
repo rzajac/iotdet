@@ -14,12 +14,14 @@
 
 package hq
 
-type responseCmd struct {
-    Success bool   `json:"success"`
-    Msg     string `json:"msg"`
-    Code    int    `json:"code"`
+// cmdResponse represents agents response to sent command.
+type cmdResponse struct {
+    // The success of the operation.
+    Success bool `json:"success"`
+    // The response code.
+    Code int `json:"code,omitempty"`
 }
 
-func newResponseCmd(success bool, msg string, code int) *responseCmd {
-    return &responseCmd{Success: success, Msg: msg, Code: code}
+func newCmdResponse(success bool, code int) *cmdResponse {
+    return &cmdResponse{Success: success, Code: code}
 }

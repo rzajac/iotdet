@@ -14,7 +14,7 @@ var configureCmd = &cobra.Command{
             return errors.New("missing access point name argument")
         }
 
-        h, err := getHQ()
+        h, err := getConfiguredHQ()
         if err != nil {
             return err
         }

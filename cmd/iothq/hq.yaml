@@ -9,7 +9,9 @@ hq:
     ap_pass: password
     # The IP agent assigns to itself when creating access point.
     agent_ip: 192.168.42.1
-    # The regexp matching agent's detection access point names.
+    # The regexp matching beacon names.
+    # It must be in formatted as string_ID where the ID is uniquely representing
+    # the agent (MAC is a good choice).
     agent_ap_name: AGENT_([[:xdigit:]]{2}){6}
     # The IP to use after connecting to agent's access point.
     use_ip: 192.168.42.2

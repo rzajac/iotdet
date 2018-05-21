@@ -83,9 +83,8 @@ type wifiItf struct {
     discCh stopChanel
 }
 
-// scan returns a list of new access points in range
-// created by agents in detection phase.
-func (w *wifiItf) scan() ([]*agentAP, error) {
+// scan returns a list of access point names in range.
+func (w *wifiItf) scan() ([]string, error) {
     w.Lock()
     defer w.Unlock()
 
@@ -101,23 +100,20 @@ func (w *wifiItf) scan() ([]*agentAP, error) {
     lines := strings.Split(string(out), "\n")
     lineCount := len(lines)
 
-    var aps []*agentAP
+    var aps []string
     for i := 0; i < lineCount; i += 2 {
         if i+1 > lineCount-1 {
             break
         }
-        // TODO
-        //mac := strings.TrimSpace(addressRegEx.FindAllStringSubmatch(lines[i], -1)[0][2])
-        name := strings.TrimSpace(nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2])
-        ap := newAgentAP(name)
-        aps = append(aps, ap)
+        apName := nameRegEx.FindAllStringSubmatch(lines[i+1], -1)[0][2]
+        aps = append(aps, strings.TrimSpace(apName))
     }
 
     return aps, nil
 }
 
 // sendCmd send command to given access point.
-func (w *wifiItf) sendCmd(ap *agentAP, cmd []byte) ([]byte, error) {
+func (w *wifiItf) sendCmd(ap *beacon, cmd []byte) ([]byte, error) {
     w.Lock()
     defer w.Unlock()
 
@@ -125,12 +121,12 @@ func (w *wifiItf) sendCmd(ap *agentAP, cmd []byte) ([]byte, error) {
         log.Error(err)
     }
 
-    if err := w.setIP(ap.useIP); err != nil {
+    if err := w.setIP(ap.itfIP); err != nil {
         return nil, err
     }
 
     // Build TCP server address.
-    address := fmt.Sprintf("%s:%d", ap.ip, ap.port)
+    address := fmt.Sprintf("%s:%d", ap.ip, ap.cmdPort)
     log.Debugf("dialing agent %s", address)
 
     // Connect to TCP server.
@@ -193,9 +189,9 @@ func (w *wifiItf) connect(apName, apPass string) error {
         return err
     }
 
+    var err error
     var wpaStopCh stopChanel
     var wpaConnCh connChanel
-    var err error
     if wpaConnCh, wpaStopCh, err = w.wpaStartDaemon(); err != nil {
         return err
     }
@@ -359,6 +355,5 @@ func (w *wifiItf) wpaStartDaemon() (connChanel, stopChanel, error) {
 func (w *wifiItf) wpaKillDaemon() error {
     log.Debug("killing wpa_supplicant for %s interface", w.itf.Name)
     exec.Command("bash", "-c", "wpa_cli -i "+w.itf.Name+" terminate").Run()
-
     return nil
 }

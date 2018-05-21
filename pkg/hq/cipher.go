@@ -14,12 +14,13 @@
 
 package hq
 
-const CIPHER_NONE = "none"
-const CIPHER_AES = "aes"
+const CipherNoop = "noop"
+const CipherAES = "aes"
 
-// Cipher is an interface for encrypting
-// and decrypting IoT detection messages.
+// Cipher is an interface for encrypting and decrypting messages.
 type Cipher interface {
+    // Encrypt encrypts bytes.
     Encrypt(data []byte) ([]byte, error)
+    // Decrypt decrypts bytes.
     Decrypt(data []byte) ([]byte, error)
 }

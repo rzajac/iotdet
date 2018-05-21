@@ -14,8 +14,8 @@
 
 package hq
 
-// The maximum expected command length.
-const CMD_MAX_LENGTH = 512
+// The maximum command length.
+const cmdMaxLength = 512
 
 // MarshalCmd is an interface which all commands must implement.
 type MarshalCmd interface {

@@ -10,7 +10,7 @@ var detectCmd = &cobra.Command{
     Short: "Detect new agents.",
     Long:  `Detect new agents.`,
     RunE: func(cmd *cobra.Command, args []string) error {
-        h, err := getHQ()
+        h, err := getConfiguredHQ()
         if err != nil {
             return err
         }
@@ -21,7 +21,12 @@ var detectCmd = &cobra.Command{
         }
 
         for _, agent := range agents {
-            fmt.Printf("found new agent: %s\n", agent.Mac())
+            fmt.Printf("found new agent: %s\n", agent.ID())
+            if h.IsMQTTSet() {
+                if err := h.PublishMQTT("hq/new_agent", 0, false, agent.ID()); err != nil {
+                    return err
+                }
+            }
         }
 
         return nil

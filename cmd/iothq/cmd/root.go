@@ -80,8 +80,8 @@ func getVersion() string {
     return string(j)
 }
 
-// config returns validated configuration structure.
-func getHQ() (*hq.HQ, error) {
+// getConfiguredHQ returns configured HQ structure.
+func getConfiguredHQ() (*hq.HQ, error) {
     c := hq.NewHQ()
 
     // configure new agent detection.
@@ -114,7 +114,7 @@ func getHQ() (*hq.HQ, error) {
     // Set cipher configuration for agents communication.
     ci := viper.GetString("hq.cipher")
     switch ci {
-    case hq.CIPHER_AES:
+    case hq.CipherAES:
         key, err := hex.DecodeString(viper.GetString("hq.cipher_aes.key"))
         if err != nil {
             return nil, errors.New("invalid AES key value")
@@ -127,7 +127,7 @@ func getHQ() (*hq.HQ, error) {
 
         c.SetCipher(hq.NewCipherAES(key, vi))
 
-    case hq.CIPHER_NONE:
+    case hq.CipherNoop:
         c.SetCipher(hq.NewNoopCipher())
 
     default:

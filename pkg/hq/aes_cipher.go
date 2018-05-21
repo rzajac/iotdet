@@ -19,58 +19,48 @@ import (
     "crypto/cipher"
 )
 
-// AES represents AES encoder / decoder.
-type CipherAES struct {
+// AESCipher represents AES encoder / decoder.
+type AESCipher struct {
     key    []byte // AES encryption key.
     vector []byte // AES CBC initialization vector.
     keyLen int    // AES key length.
 }
 
 // NewCipherAES returns new AES encoder / decoder.
-func NewCipherAES(key, vector []byte) *CipherAES {
-    return &CipherAES{
+func NewCipherAES(key, vector []byte) *AESCipher {
+    return &AESCipher{
         key:    key,
         vector: vector,
         keyLen: len(key),
     }
 }
 
-func (ad *CipherAES) Encrypt(data []byte) ([]byte, error) {
+func (a *AESCipher) Encrypt(data []byte) ([]byte, error) {
     var err error
 
     dataLength := len(data)
-    data = padRight(data, dataLength+(ad.keyLen-dataLength%ad.keyLen))
+    data = padRight(data, dataLength+(a.keyLen-dataLength%a.keyLen))
 
     var block cipher.Block
-    if block, err = aes.NewCipher(ad.key); err != nil {
+    if block, err = aes.NewCipher(a.key); err != nil {
         return nil, err
     }
 
-    mode := cipher.NewCBCEncrypter(block, ad.vector)
+    mode := cipher.NewCBCEncrypter(block, a.vector)
     mode.CryptBlocks(data, data)
 
     return data, nil
 }
 
-func (ad *CipherAES) Decrypt(data []byte) ([]byte, error) {
+func (a *AESCipher) Decrypt(data []byte) ([]byte, error) {
     var err error
 
     var block cipher.Block
-    if block, err = aes.NewCipher(ad.key); err != nil {
+    if block, err = aes.NewCipher(a.key); err != nil {
         return nil, err
     }
 
-    cipher.NewCBCDecrypter(block, ad.vector).CryptBlocks(data, data)
+    cipher.NewCBCDecrypter(block, a.vector).CryptBlocks(data, data)
 
     return data, err
-}
-
-// padRight right pads byte array with zeros.
-func padRight(msg []byte, length int) []byte {
-    for {
-        if len(msg) == length {
-            return msg
-        }
-        msg = append(msg, 0)
-    }
 }
