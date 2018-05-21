@@ -16,116 +16,36 @@ package hq
 
 import (
     "time"
-    "github.com/pkg/errors"
-    "regexp"
     "github.com/eclipse/paho.mqtt.golang"
     "fmt"
 )
 
 // HQ represents HQ configuration.
 type HQ struct {
-    // The interface name to use for new agents detection.
-    detItfName string
+    // The HQ configuration.
+    cfg Configurator
     // The WiFi interface used for new agent detection.
     detItf *wifiItf
-    // The regexp used to recognize agent's access point names.
-    detApNamePat *regexp.Regexp
-    // The password for agent's access point.
-    detApPass string
-    // The IP agent assigns to itself when creating access point.
-    detAgentIP string
-    // The IP to use after connecting to agent's access point.
-    detUseIP string
-    // The TCP port agents listen on for configuration commands.
-    detCmdPort int
-    // The interval for scanning for new agents.
-    detInterval time.Duration
-    // The cipher to use for communication with agent devices.
-    cipher Cipher
-    // The access point name agents use to communicate.
-    mainApName string
-    // The access point password.
-    mainApPass string
-    // The MQTT configuration.
-    mqttCfg MQTTConfig
     // The MQTT client.
     mqttClient mqtt.Client
 }
 
 // NewHQ returns new instance of HQ with some default values for fields.
-func NewHQ() *HQ {
-    return &HQ{
-        detAgentIP:  "192.168.42.1",
-        detUseIP:    "192.168.42.2",
-        detCmdPort:  7802,
-        detInterval: 5 * time.Second,
-        cipher:      NewNoopCipher(),
-    }
-}
-
-// SetDet set WiFi interface name, agent's access point name regexp and password
-// to use for detecting new agents.
-func (hq *HQ) SetDet(itfName string, apNamePat *regexp.Regexp, apPass string) error {
-    if itfName == "" {
-        return errors.New("you must provide WiFi interface name")
-    }
-    hq.detItfName = itfName
-
-    var err error
-    hq.detItf, err = getInterface(hq.detItfName)
+func NewHQ(cfg Configurator) (*HQ, error) {
+    itf, err := getInterface(cfg.GetDetItfName())
     if err != nil {
-        return err
+        return nil, err
     }
-
-    hq.detApNamePat = apNamePat
-    hq.detApPass = apPass
-    return nil
-}
-
-// SetDetIP set IP to use for WiFi interface after connecting to agent's
-// access point (agents do not provide DHCP) and agent's IP.
-func (hq *HQ) SetDetIPs(useIP, agentIP string) error {
-    hq.detUseIP = useIP
-    hq.detAgentIP = agentIP
-    return nil
-}
-
-// SetDetCmdPort set TCP port to use for communication with agent.
-// Every agent creates TC/IP command server during discovery phase to receive
-// configuration for HQ access point and MQTT server.
-func (hq *HQ) SetDetCmdPort(cmdPort int) error {
-    hq.detCmdPort = cmdPort
-    return nil
-}
-
-// SetDetInterval sets interval used for agent discovery retries.
-func (hq *HQ) SetDetInterval(interval time.Duration) error {
-    hq.detInterval = interval
-    return nil
-}
-
-// SetCipher sets a cipher to use to encrypt and decrypt communication with agents.
-func (hq *HQ) SetCipher(c Cipher) {
-    hq.cipher = c
-}
-
-// SetAccessPoint sets HQ access point credentials which will be sent to
-// new agent during discovery phase.
-func (hq *HQ) SetAccessPoint(apName, apPass string) error {
-    hq.mainApName = apName
-    hq.mainApPass = apPass
-    return nil
-}
-
-// SetMQTTBroker configures MQTT broker.
-func (hq *HQ) SetMQTTClient(client mqtt.Client) error {
-    hq.mqttClient = client
-    return nil
+    h := &HQ{
+        cfg:    cfg,
+        detItf: itf,
+    }
+    return h, nil
 }
 
 // Detect detects IoT access points in range.
 func (hq *HQ) DetectAgents() ([]*beacon, error) {
-    log.Infof("scanning for new agents using %s interface...", hq.detItfName)
+    log.Infof("scanning for new agents using %s interface...", hq.cfg.GetDetItfName())
     apNames, err := hq.detItf.scan()
     if err != nil {
         return nil, err
@@ -134,7 +54,7 @@ func (hq *HQ) DetectAgents() ([]*beacon, error) {
     // Filter out non agent access points.
     var agents []*beacon
     for _, apName := range apNames {
-        if hq.detApNamePat.MatchString(apName) {
+        if hq.cfg.GetBeaconNamePat().MatchString(apName) {
             agents = append(agents, hq.agentAP(apName))
         }
     }
@@ -172,7 +92,6 @@ func (hq *HQ) SetMQTTConfig(cfg MQTTConfig) error {
         return token.Error()
     }
 
-    hq.mqttCfg = cfg
     hq.mqttClient = client
     return nil
 }
@@ -186,14 +105,14 @@ func (hq *HQ) PublishMQTT(topic string, qos byte, retained bool, payload interfa
 // getConfigCmd returns configuration command.
 func (hq *HQ) getConfigCmd() *cmdConfig {
     cmd := newConfigCmd()
-    cmd.ApName = hq.mainApName
-    cmd.ApPass = hq.mainApPass
+    cmd.ApName = hq.cfg.GetAPName()
+    cmd.ApPass = hq.cfg.GetAPPass()
 
     if hq.IsMQTTSet() {
-        cmd.MQTTIP = hq.mqttCfg.ip
-        cmd.MQTTPort = hq.mqttCfg.port
-        cmd.MQTTUser = hq.mqttCfg.user
-        cmd.MQTTPass = hq.mqttCfg.pass
+        cmd.MQTTIP = hq.cfg.GetMQTTIP()
+        cmd.MQTTPort = hq.cfg.GetMQTTPort()
+        cmd.MQTTUser = hq.cfg.GetMQTTUser()
+        cmd.MQTTPass = hq.cfg.GetMQTTPass()
     }
 
     return cmd
@@ -201,15 +120,15 @@ func (hq *HQ) getConfigCmd() *cmdConfig {
 
 // IsMQTTSet returns true if MQTT configuration has been set.
 func (hq *HQ) IsMQTTSet() bool {
-    return hq.mqttCfg.ip != "" && hq.mqttCfg.port != 0
+    return hq.cfg.GetMQTTIP() != "" && hq.cfg.GetMQTTPort() != 0
 }
 
 // beacon is helper method returning configured
 // agent access point with given name.
 func (hq *HQ) agentAP(apName string) *beacon {
     return newBeacon(apName,
-        hq.detApPass,
-        hq.detAgentIP,
-        hq.detUseIP,
-        hq.detCmdPort)
+        hq.cfg.GetBeaconPass(),
+        hq.cfg.GetBeaconIP(),
+        hq.cfg.GetDetItfIP(),
+        hq.cfg.GetBeaconPort())
 }

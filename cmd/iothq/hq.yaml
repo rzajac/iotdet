@@ -4,17 +4,18 @@ hq:
 
   detect:
     # The wireless interface name to listen for new agents on.
-    itf: wlx000f55a93e30
-    # The password for agent's access point.
-    ap_pass: password
-    # The IP agent assigns to itself when creating access point.
-    agent_ip: 192.168.42.1
+    # itf: wlx000f55a93e30
+    itf: wlp3s0
+    # The IP to use after connecting to agent's access point.
+    itf_ip: 192.168.42.2
     # The regexp matching beacon names.
     # It must be in formatted as string_ID where the ID is uniquely representing
     # the agent (MAC is a good choice).
-    agent_ap_name: AGENT_([[:xdigit:]]{2}){6}
-    # The IP to use after connecting to agent's access point.
-    use_ip: 192.168.42.2
+    beacon_name: AGENT_([[:xdigit:]]{2}){6}
+    # The password for agent's access point.
+    beacon_pass: password
+    # The IP agent assigns to itself when creating access point.
+    beacon_ip: 192.168.42.1
     # The TCP port agents listen on for configuration commands.
     cmd_port: 7802
     # The interval for scanning for new agents in seconds.
@@ -27,10 +28,15 @@ hq:
     pass: password
 
   mqtt:
+    # The client ID to use with MQTT broker communication.
     client_id: hq
+    # The MQTT broker IP.
     ip: 127.0.0.1
+    # The MQTT broker port.
     port: 1883
+    # The MQTT broker username.
     user: hq
+    # The MQTT broker password.
     pass: YjkzYmVj
 
   cipher_aes:
