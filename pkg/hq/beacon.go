@@ -1,4 +1,4 @@
-// IoTDet (c) 2017 Rafal Zajac <rzajac@gmail.com> All rights reserved.
+// HomeHQ (c) 2018 Rafal Zajac <rzajac@gmail.com> All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,32 +20,33 @@ import (
 
 // beacon represents access point agent creates during discovery phase.
 type beacon struct {
-    // Access point name which must have unique ID of the beacon as part of it.
-    // It is constructed as two strings separated by underscore where the second
+    // Access point name.
+    // It's constructed as two strings separated by underscore where the second
     // component is the unique ID. It's customary to use MAC address as the
-    // unique ID.
-    // The same ID must be used by the agent for all other communication.
+    // unique ID. The same ID must be used by the agent for all other
+    // communication.
     name string
     // Access point password.
     pass string
-    // The IP agent assigns to itself when creating access point.
+    // The IP agent assigns to itself after creating access point.
     // This need to be known because agents do not run DHCP service.
     ip string
-    // The IP to set on the interface which is used to connect to access point.
+    // The IP to set on the interface after connecting to the access point.
     itfIP string
-    // The TCP port agent listens on for configuration commands during
-    // agent detection phase.
-    cmdPort int
+    // The command server TCP port.
+    // Command server is a TCP server agent creates to listen for
+    // configuration data during detection phase.
+    port int
 }
 
 // newBeacon returns new beacon instance.
-func newBeacon(name, pass, ip, itfIP string, cmdPort int) *beacon {
+func newBeacon(name, pass, ip, itfIP string, port int) *beacon {
     return &beacon{
-        name:    name,
-        pass:    pass,
-        ip:      ip,
-        itfIP:   itfIP,
-        cmdPort: cmdPort,
+        name:  name,
+        pass:  pass,
+        ip:    ip,
+        itfIP: itfIP,
+        port:  port,
     }
 }
 

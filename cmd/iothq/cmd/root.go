@@ -86,12 +86,12 @@ func getConfiguredHQ() (*hq.HQ, error) {
         return nil, err
     }
 
-    log := hq.NewDefaultLogger()
-    hq.SetLogger(log)
+    hq.ERROR = &Log{}
+    hq.INFO = &Log{}
 
     // Setup logger.
     if viper.GetBool("debug") {
-        hq.SetLogger(log.DebugOn())
+        hq.DEBUG = &Log{}
     }
 
     return h, nil
@@ -177,4 +177,14 @@ func (config) GetMQTTPass() string {
 
 func (config) GetMQTTClientID() string {
     return viper.GetString("hq.mqtt.client_id")
+}
+
+type Log struct{}
+
+func (l *Log) Println(v ...interface{}) {
+    fmt.Println(v...)
+}
+
+func (l *Log) Printf(format string, v ...interface{}) {
+    fmt.Printf(format, v...)
 }

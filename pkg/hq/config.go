@@ -1,4 +1,4 @@
-// IoTDet (c) 2017 Rafal Zajac <rzajac@gmail.com> All rights reserved.
+// HomeHQ (c) 2018 Rafal Zajac <rzajac@gmail.com> All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import (
 // Configurator is an interface used to configure HQ.
 type Configurator interface {
     // GetDetItfName returns the network interface name to
-    // use for beacons detection (new agents).
+    // use for beacon detection (new agents).
     GetDetItfName() string
     // GetDetItfIP returns the IP to use after connecting to beacon.
     GetDetItfIP() string
     // GetDetInterval returns the interval for scanning for new beacons.
     GetDetInterval() time.Duration
-    // GetBeaconNamePat returns the regexp used to recognize beacon names.
+    // GetBeaconNamePat returns the regexp used to match beacon names.
     GetBeaconNamePat() *regexp.Regexp
     // GetBeaconPass returns the password to use when connecting to beacons.
     GetBeaconPass() string

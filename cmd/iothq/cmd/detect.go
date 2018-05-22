@@ -22,11 +22,6 @@ var detectCmd = &cobra.Command{
 
         for _, agent := range agents {
             fmt.Printf("found new agent: %s\n", agent.ID())
-            if h.IsMQTTSet() {
-                if err := h.PublishMQTT("hq/new_agent", 0, false, agent.ID()); err != nil {
-                    return err
-                }
-            }
         }
 
         return nil

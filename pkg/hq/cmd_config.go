@@ -1,4 +1,4 @@
-// IoTDet (c) 2017 Rafal Zajac <rzajac@gmail.com> All rights reserved.
+// HomeHQ (c) 2018 Rafal Zajac <rzajac@gmail.com> All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ package hq
 
 import "encoding/json"
 
-// cmdConfig represents configuration structure agents
+// cmdConfig represents configuration command agents
 // expect to receive during detection phase.
 type cmdConfig struct {
     // The command identifier.
@@ -36,6 +36,7 @@ type cmdConfig struct {
 }
 
 // newConfigCmd returns configuration command.
+// It sets only Cmd field user needs to set the other fields.
 func newConfigCmd() *cmdConfig {
     return &cmdConfig{Cmd: "cfg"}
 }
