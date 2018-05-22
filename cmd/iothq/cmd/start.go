@@ -6,8 +6,9 @@ import (
 
 var startCmd = &cobra.Command{
     Use:   "start",
-    Short: "Start HomeHQ service.",
+    Short: "Start HomeHQ service",
     Long:  `Start HomeHQ service.`,
+    Hidden: true,
     RunE: func(cmd *cobra.Command, args []string) error {
         // Handle CTRL+C.
         //sig := make(chan os.Signal, 2)

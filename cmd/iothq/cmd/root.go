@@ -20,7 +20,7 @@ var cfgFile string
 func init() {
     cobra.OnInitialize(onInitialize)
     rootCmd.SetVersionTemplate(`{{.Version}}`)
-    rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iotdet.yaml)")
+    rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "path to configuration file (default is ./iothq.yaml)")
     rootCmd.PersistentFlags().BoolP("version", "v", false, "version")
     rootCmd.PersistentFlags().BoolP("debug", "d", false, "run in debug mode")
     viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))

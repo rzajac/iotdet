@@ -1,23 +1,41 @@
-## Detect and configure IoT devices.
+## Detect and configure IoT wireless devices.
 
 Repository contains library and command line tool for automatic detection and 
-configuration of wireless IoT devices in range.
+configuration of wireless IoT devices, called agents, in range.
 
 It was designed to work with ESP8266 C implementation 
 at https://github.com/rzajac/esp-det repository. 
 
+## Help.
+
+```
+IoT HQ.
+   
+   Usage:
+     iothq [command]
+   
+   Available Commands:
+     configure   Configure agent.
+     detect      Detect new agents
+     help        Help about any command
+   
+   Flags:
+     -c, --config string   path to configuration file (default is ./iothq.yaml)
+     -d, --debug           run in debug mode
+     -h, --help            help for iothq
+     -v, --version         version
+   
+   Use "iothq [command] --help" for more information about a command.
+```
+
 ##  Configuration.
 
-See [iotdet.ini](iotdet/iotdet.ini) file.
+See [hq.yaml](cmd/iothq/hq.yaml) file.
 
 ## AES key generation.
 
-You may use [gen_aes.sh](gen_aes.sh) helper script to generate keys using `openssl rand`.
-
-## TODO
-
-- [x] Remove configuration file written by wpa_supplicant to temp directory.
-- [x] Check wpa_supplicant command log and proceed only when message like "CTRL-EVENT-CONNECTED - Connection to 5e:cf:7f:80:ce:79 completed" is seen.
+You may use [gen_aes.sh](gen_aes.sh) helper script to generate keys 
+using `openssl rand`.
 
 ## License
 

@@ -7,8 +7,9 @@ import (
 
 var detectCmd = &cobra.Command{
     Use:   "detect",
-    Short: "Detect new agents.",
+    Short: "Detect new agents",
     Long:  `Detect new agents by scanning for beacons.`,
+    Args:  cobra.NoArgs,
     RunE: func(cmd *cobra.Command, args []string) error {
         h, err := getConfiguredHQ()
         if err != nil {
