@@ -6,8 +6,8 @@ import (
 
 var startCmd = &cobra.Command{
     Use:   "start",
-    Short: "Start IoT detection and configuration service.",
-    Long:  `Start IoT detection and configuration service.`,
+    Short: "Start HomeHQ service.",
+    Long:  `Start HomeHQ service.`,
     RunE: func(cmd *cobra.Command, args []string) error {
         // Handle CTRL+C.
         //sig := make(chan os.Signal, 2)

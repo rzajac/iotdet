@@ -7,8 +7,8 @@ import (
 
 var configureCmd = &cobra.Command{
     Use:   "configure",
-    Short: "configure new agent.",
-    Long:  `configure new agent.`,
+    Short: "configure agent.",
+    Long:  `configure agent.`,
     RunE: func(cmd *cobra.Command, args []string) error {
         if len(args) != 1 {
             return errors.New("missing access point name argument")
