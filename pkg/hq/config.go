@@ -24,8 +24,8 @@ type Configurator interface {
     // GetDetItfName returns the network interface name to
     // use for beacon detection (new agents).
     GetDetItfName() string
-    // GetDetItfIP returns the IP to use after connecting to beacon.
-    GetDetItfIP() string
+    // GetItfIP returns the IP to use after connecting to a beacon.
+    GetItfIP() string
     // GetDetInterval returns the interval for scanning for new beacons.
     GetDetInterval() time.Duration
     // GetBeaconNamePat returns the regexp used to match beacon names.

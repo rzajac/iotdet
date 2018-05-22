@@ -47,7 +47,7 @@ func (hq *HQ) DetectAgents() ([]*beacon, error) {
     var agents []*beacon
     for _, apName := range apNames {
         if hq.cfg.GetBeaconNamePat().MatchString(apName) {
-            agents = append(agents, hq.agentAP(apName))
+            agents = append(agents, hq.beacon(apName))
         }
     }
 
@@ -56,7 +56,7 @@ func (hq *HQ) DetectAgents() ([]*beacon, error) {
 
 // Configure configure given agent access point.
 func (hq *HQ) Configure(apName string) error {
-    ap := hq.agentAP(apName)
+    ap := hq.beacon(apName)
 
     cmd := hq.getConfigCmd().MarshalCmd()
     resp, err := hq.detItf.sendCmd(ap, cmd)
@@ -82,12 +82,11 @@ func (hq *HQ) getConfigCmd() *cmdConfig {
     return cmd
 }
 
-// beacon is helper method returning configured
-// agent access point with given name.
-func (hq *HQ) agentAP(apName string) *beacon {
-    return newBeacon(apName,
+// beacon is helper method returning configured beacon instance.
+func (hq *HQ) beacon(name string) *beacon {
+    return newBeacon(name,
         hq.cfg.GetBeaconPass(),
         hq.cfg.GetBeaconIP(),
-        hq.cfg.GetDetItfIP(),
+        hq.cfg.GetItfIP(),
         hq.cfg.GetBeaconPort())
 }
