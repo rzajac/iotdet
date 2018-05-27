@@ -50,6 +50,11 @@ func newBeacon(name, pass, ip, itfIP string, port int) *beacon {
     }
 }
 
+// Name returns the full beacon name.
+func (ap *beacon) Name() string {
+    return strings.Split(ap.name, "_")[1]
+}
+
 // ID returns beacon unique ID.
 func (ap *beacon) ID() string {
     return strings.Split(ap.name, "_")[1]

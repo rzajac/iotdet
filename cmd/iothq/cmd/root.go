@@ -104,7 +104,7 @@ func (config) GetDetItfName() string {
     return viper.GetString("hq.detect.itf")
 }
 
-func (config) GetDetItfIP() string {
+func (config) GetItfIP() string {
     return viper.GetString("hq.detect.itf_ip")
 }
 

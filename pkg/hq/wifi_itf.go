@@ -118,7 +118,7 @@ func (w *wifiItf) sendCmd(ap *beacon, cmd []byte) ([]byte, error) {
     defer w.Unlock()
 
     if err := w.connect(ap.name, ap.pass); err != nil {
-        ERROR.Println(err)
+        return nil, err
     }
 
     if err := w.setIP(ap.itfIP); err != nil {

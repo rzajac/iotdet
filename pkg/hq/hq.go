@@ -58,9 +58,18 @@ func (hq *HQ) DetectAgents() ([]*beacon, error) {
 func (hq *HQ) Configure(apName string) error {
     ap := hq.beacon(apName)
 
+    var err error
     cmd := hq.getConfigCmd().MarshalCmd()
+    if cmd, err = hq.cfg.GetCipher().Encrypt(cmd); err != nil {
+        return err
+    }
+
     resp, err := hq.detItf.sendCmd(ap, cmd)
     if err != nil {
+        return err
+    }
+
+    if resp, err = hq.cfg.GetCipher().Decrypt(resp); err != nil {
         return err
     }
 
